@@ -12,14 +12,17 @@ function islandora_pathauto_pathauto($op) {
     $settings->patterndescr = t('Default path pattern');
     $settings->patterndefault = 'islandora/object/[fedora:pid]';
     $settings->token_type = 'fedora';
-    $settings->patternitems = array('view' => 'View object');
+    $settings->patternitems = array('view' => 'Pattern for object\'s landing page', 'obj-en' => 'Pattern for OBJ (i.e. PDF) in English','obj-es' => 'Pattern for object (PDF) in Spanish', 'obj-fr' => 'Pattern for object (PDF) in French', );
     $settings->batch_update_callback = 'islandora_pathauto_pathauto_bulkupdate';
     return $settings;
 }
 
 function islandora_pathauto_create_alias($object, $op) {
     module_load_include('inc', 'pathauto');
-    pathauto_create_alias('islandora', $op, 'islandora/object/' . $object->id , array('fedora' => $object, 'view'), 'fedora');
+    pathauto_create_alias('islandora', $op, 'islandora/object/' . $object->id , array('fedora' => $object),  'view');
+    pathauto_create_alias('islandora', $op, 'islandora/object/' . $object->id . '/datastream/OBJ-EN/view', array('fedora' => $object, ), 'obj-en');
+    pathauto_create_alias('islandora', $op, 'islandora/object/' . $object->id . '/datastream/OBJ-ES/view', array('fedora' => $object, ), 'obj-es');
+    pathauto_create_alias('islandora', $op, 'islandora/object/' . $object->id . '/datastream/OBJ-FR/view', array('fedora' => $object, ), 'obj-fr');
 }
 
 /**
@@ -36,6 +39,12 @@ function islandora_pathauto_islandora_object_modified($object) {
     islandora_pathauto_create_alias($object, 'update');
 }
 
+/**
+ * Implements hook_islandora_object_purged.
+ */
+function islandora_pathauto_islandora_object_purged($object) {
+    islandora_pathauto_create_alias($object, 'delete');
+}
 /**
  * Implements hook_pathauto_bulkupdate.
  */
@@ -82,6 +91,14 @@ function islandora_pathauto_pathauto_bulkupdate(){
   return NULL;
 }
 
+
+/*
+ * Implements hook_path_alias_types().
+ */
+function islandora_pathauto_path_alias_types(){
+    $objects['islandora/object/pubs:9'] = t('Islandora');
+    return $objects;
+}
 /* 
  * Implements hook_token_info.
  */
@@ -99,6 +116,10 @@ function islandora_pathauto_token_info() {
         'name' => t('Object label'),
         'description' => t('Fedora object label'),
     );
+    $info['tokens']['fedora']['shortpid'] = array(
+        'name' => t('Short PID'),
+        'description' => t('Fedora object pid without namespace'),
+    );
 
     return $info;
 }
@@ -113,6 +134,10 @@ function islandora_pathauto_tokens($type, $tokens, array $data = array(), array 
         foreach ($tokens as $name => $original) {
             if ($name == 'pid') {
                 $replacements[$original] = $object->id;
+            }
+            if ($name == 'shortpid') {
+                $temp = explode(':', $object->id, 2);
+                $replacements[$original] = $temp[1];
             }
             if ($name == 'label') {
                 $replacements[$original] = $object->label;
