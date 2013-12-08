@@ -145,6 +145,7 @@ function islandora_pathauto_tokens($type, $tokens, array $data = array(), array 
                 $replacements[$original] = $object->label;
             }
         }
-    }
     return $replacements;
+    }
+    return array();
 }
