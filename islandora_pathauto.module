@@ -63,7 +63,7 @@ function islandora_pathauto_pathauto_bulkupdate(){
     $query = 'SELECT $object $title $content
         FROM <#ri>
         WHERE {
-            $object $collection_predicate <info:fedora/islandora:sp_basic_image_collection> ;
+            $object $collection_predicate <info:fedora/islandora:entity_collection> ;
             <fedora-model:label> $title ;
             <fedora-model:hasModel> $content ;
             <fedora-model:state> <fedora-model:Active> .
@@ -80,7 +80,7 @@ function islandora_pathauto_pathauto_bulkupdate(){
         foreach ($results as $result) {
             $pid = $result['object']['value'];
             $object = islandora_object_load($pid);
-            islandora_pathauto_create_alias($object->id, 'bulkupdate');
+            islandora_pathauto_create_alias($object, 'bulkupdate');
             $count++;
         }
         drupal_set_message($count . ' object aliases were updated.');
