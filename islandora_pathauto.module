@@ -42,6 +42,13 @@ function islandora_pathauto_islandora_object_ingested($object) {
 }
 
 /**
+ * Implements hook_islandora_object_modified.
+ */
+function islandora_pathauto_islandora_object_modified($object) {
+  islandora_pathauto_create_alias($object, 'update');
+}
+
+/**
  * Implements hook_islandora_object_purged.
  */
 function islandora_pathauto_islandora_object_purged($pid) {
