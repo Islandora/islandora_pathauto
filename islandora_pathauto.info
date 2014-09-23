@@ -2,7 +2,6 @@ name = Islandora pathauto
 description = Lets you create aliases for islandora paths using the pathauto module.
 package = Islandora Customizations
 dependencies[] = pathauto
-dependencies[] = subpathauto
 dependencies[] = token
 dependencies[] = islandora
 core = 7.x

@@ -28,31 +28,24 @@ function islandora_pathauto_pathauto($op) {
     return $settings;
 }
 
-function islandora_pathauto_create_alias($object, $op) {
+function islandora_pathauto_create_alias($pid, $op, $params = NULL) {
     module_load_include('inc', 'pathauto');
-    pathauto_create_alias('islandora', $op, 'islandora/object/' . $object->id , array('fedora' => $object),  'view');
-    pathauto_create_alias('islandora', $op, 'islandora/object/' . $object->id . '/datastream/OBJ/view', array('fedora' => $object, ), 'obj');
+    pathauto_create_alias('islandora', $op, 'islandora/object/' . $pid , array('fedora' => $pid),  'view');
+    pathauto_create_alias('islandora', $op, 'islandora/object/' . $pid . '/datastream/OBJ/view', array('fedora' => $pid, ), 'obj');
 }
 
 /**
  * Implements hook_islandora_object_ingested().
  */
 function islandora_pathauto_islandora_object_ingested($object) {
-    islandora_pathauto_create_alias($object, 'insert');
-}
-
-/**
- * Implements hook_islandora_object_modified.
- */
-function islandora_pathauto_islandora_object_modified($object) {
-    islandora_pathauto_create_alias($object, 'update');
+  islandora_pathauto_create_alias($object, 'insert');
 }
 
 /**
  * Implements hook_islandora_object_purged.
  */
-function islandora_pathauto_islandora_object_purged($object) {
-    islandora_pathauto_create_alias($object, 'delete');
+function islandora_pathauto_islandora_object_purged($pid) {
+  pathauto_path_delete_all('islandora/object/' . $pid);
 }
 /**
  * Implements hook_pathauto_bulkupdate.
@@ -80,7 +73,7 @@ function islandora_pathauto_pathauto_bulkupdate(){
         foreach ($results as $result) {
             $pid = $result['object']['value'];
             $object = islandora_object_load($pid);
-            islandora_pathauto_create_alias($object, 'bulkupdate');
+            islandora_pathauto_create_alias($object->id, 'bulkupdate');
             $count++;
         }
         drupal_set_message($count . ' object aliases were updated.');
@@ -106,7 +99,7 @@ function islandora_pathauto_pathauto_bulkupdate(){
  * Implements hook_path_alias_types().
  */
 function islandora_pathauto_path_alias_types(){
-    $objects['islandora/object/pubs:9'] = t('Islandora');
+    $objects['islandora/object/pubs:9'] = t('Islandora'); #FIXME
     return $objects;
 }
 /* 
