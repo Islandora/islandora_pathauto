@@ -29,10 +29,5 @@ By default, Pathauto removes punctuation such as the colon (:) from paths before
 in PIDs that look like islandora123; if this is undesirable then there's a setting under "punctuation" for Pathauto 
 at admin/config/search/path/settings that lets you keep the colon.
  
-Known Issues
-------------
 
-If your alias pattern includes the object's label, then modifying the object's label will not immediately modify the alias. 
-When the object is modified repeatedly, then the alias will always be one version behind. This issue is documented
-at https://jira.duraspace.org/browse/ISLANDORA-1073.
 
