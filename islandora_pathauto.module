@@ -14,25 +14,33 @@
  */
 
 function islandora_pathauto_pathauto($op) {
+    module_load_include('inc', 'islandora', 'includes/utilities');
     $settings = new stdClass();
     $settings->module = 'islandora';
     $settings->groupheader = t('Islandora paths');
     $settings->patterndescr = t('Default path pattern');
     $settings->patterndefault = '';
     $settings->token_type = 'fedora';
-    $settings->patternitems = array(
-        'view' => 'Pattern for object\'s landing page', 
-        'obj' => 'Pattern for OBJ datastream (i.e. PDF file)',
-    );
+    $settings->patternitems = array();
     $settings->batch_update_callback = 'islandora_pathauto_pathauto_bulkupdate';
+    $cmodels = islandora_get_content_models();
+    foreach ($cmodels as $cmodel) {
+        $settings->patternitems[$cmodel['pid']] = t('Pattern for all ' . $cmodel['label'] . ' objects');
+    }
     return $settings;
 }
 
-function islandora_pathauto_create_alias($pid, $op, $params = NULL) {
+function islandora_pathauto_create_alias($object, $op, $params = NULL) {
     module_load_include('inc', 'pathauto');
-    pathauto_create_alias('islandora', $op, 'islandora/object/' . $pid , array('fedora' => $pid),  'view');
-    pathauto_create_alias('islandora', $op, 'islandora/object/' . $pid . '/datastream/OBJ/view', array('fedora' => $pid, ), 'obj');
+    $path = 'islandora/object/' . $object->id;
+    foreach ($object->models as $cmodel){
+        if (substr($cmodel, 0, 11) == 'info:fedora'){
+            $cmodel = substr($cmodel, 12);
+        }
+        pathauto_create_alias('islandora', $op, $path, array('fedora' => $object), $cmodel);
+    }
 }
+// $module, $op, $source, $data, $type = NULL, $language = LANGUAGE_NONE)
 
 /**
  * Implements hook_islandora_object_ingested().
