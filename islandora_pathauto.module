@@ -56,6 +56,7 @@ function islandora_pathauto_islandora_object_alter($original, $context) {
   $object = (object) array(
       'id' => $original->id,
       'label' => $original->label,
+      'models' => $original->models,
   );
 
   # The object does not have the new label yet. Nasty fix to get it from $context.
