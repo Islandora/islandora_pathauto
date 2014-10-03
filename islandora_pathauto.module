@@ -50,9 +50,20 @@ function islandora_pathauto_islandora_object_ingested($object) {
 }
 
 /**
- * Implements hook_islandora_object_modified.
+ * Implements hook_islandora_object_alter.
  */
-function islandora_pathauto_islandora_object_modified($object) {
+function islandora_pathauto_islandora_object_alter($original, $context) {
+  $object = (object) array(
+      'id' => $original->id,
+      'label' => $original->label,
+  );
+
+  # The object does not have the new label yet. Nasty fix to get it from $context.
+  if (isset($context['action']) and $context['action']=='modify') {
+      if (isset($context['params']['label'])){
+          $object->label = $context['params']['label'];
+      }
+  }
   islandora_pathauto_create_alias($object, 'update');
 }
 
