@@ -1,6 +1,7 @@
 name = Islandora pathauto
 description = Lets you create aliases for islandora paths using the pathauto module.
-package = Islandora Customizations
+configure = admin/islandora/tools/islandora-pathauto
+package = Islandora Tools
 dependencies[] = pathauto
 dependencies[] = token
 dependencies[] = islandora

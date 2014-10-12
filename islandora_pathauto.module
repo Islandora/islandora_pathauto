@@ -10,60 +10,113 @@
  */
 
 /**
+ * Implements hook_menu().
+ */
+function islandora_pathauto_menu()
+{
+  $items['admin/islandora/tools/islandora-pathauto'] = array(
+    'title' => 'Pathauto',
+    'description' => 'Configure settings for the Islandora Pathauto module.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('islandora_pathauto_admin_settings'),
+    'access arguments' => array('administer islandora_pathauto'),
+    'file' => 'includes/admin.form.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function islandora_pathauto_permission()
+{
+  return array(
+    'administer islandora_pathauto' => array(
+      'title' => t('Administer Islandora Pathauto'),
+      'description' => t('Select content models available for Islandora Pathauto.'),
+    ),
+  );
+}
+
+function islandora_pathauto_theme($existing, $type, $theme, $path)
+{
+  return array(
+    'islandora_pathauto_admin_table' => array(
+      'render element' => 'form',
+    ),
+  );
+}
+
+/**
  * Implements hook_pathauto().
  */
 
-function islandora_pathauto_pathauto($op) {
-    module_load_include('inc', 'islandora', 'includes/utilities');
-    $settings = new stdClass();
-    $settings->module = 'islandora';
-    $settings->groupheader = t('Islandora paths');
-    $settings->patterndescr = t('Default path pattern');
-    $settings->patterndefault = '';
-    $settings->token_type = 'fedora';
-    $settings->patternitems = array();
-    $settings->batch_update_callback = 'islandora_pathauto_pathauto_bulkupdate';
-    $cmodels = islandora_get_content_models();
-    foreach ($cmodels as $cmodel) {
-        $settings->patternitems[$cmodel['pid']] = t('Pattern for all ' . $cmodel['label'] . ' objects');
+function islandora_pathauto_pathauto($op)
+{
+  module_load_include('inc', 'islandora', 'includes/utilities');
+  $settings = new stdClass();
+  $settings->module = 'islandora';
+  $settings->groupheader = t('Islandora paths');
+  $settings->patterndescr = t('Default path pattern');
+  $settings->patterndefault = '';
+  $settings->token_type = 'fedora';
+  $settings->patternitems = array();
+  $settings->batch_update_callback = 'islandora_pathauto_pathauto_bulkupdate';
+  $all_cmodels = islandora_get_content_models();
+  $pathauto_cmodels = variable_get('islandora_pathauto_selected_cmodels', array());
+  $cmodels = array();
+  foreach ($all_cmodels as $key => $value) {
+    if (in_array($key, $pathauto_cmodels)) {
+      $cmodels[$key] = $value;
     }
-    return $settings;
+  }
+
+
+  foreach ($cmodels as $cmodel) {
+    $settings->patternitems[$cmodel['pid']] = t('Pattern for all ' . $cmodel['label'] . ' objects');
+  }
+  return $settings;
 }
 
-function islandora_pathauto_create_alias($object, $op, $params = NULL) {
-    module_load_include('inc', 'pathauto');
-    $path = 'islandora/object/' . $object->id;
-    foreach ($object->models as $cmodel){
-        if (substr($cmodel, 0, 11) == 'info:fedora'){
-            $cmodel = substr($cmodel, 12);
-        }
-        pathauto_create_alias('islandora', $op, $path, array('fedora' => $object), $cmodel);
+function islandora_pathauto_create_alias($object, $op, $params = NULL)
+{
+  module_load_include('inc', 'pathauto');
+  $path = 'islandora/object/' . $object->id;
+  foreach ($object->models as $cmodel) {
+    if (substr($cmodel, 0, 11) == 'info:fedora') {
+      $cmodel = substr($cmodel, 12);
     }
+    pathauto_create_alias('islandora', $op, $path, array('fedora' => $object), $cmodel);
+  }
 }
+
 // $module, $op, $source, $data, $type = NULL, $language = LANGUAGE_NONE)
 
 /**
  * Implements hook_islandora_object_ingested().
  */
-function islandora_pathauto_islandora_object_ingested($object) {
+function islandora_pathauto_islandora_object_ingested($object)
+{
   islandora_pathauto_create_alias($object, 'insert');
 }
 
 /**
  * Implements hook_islandora_object_alter.
  */
-function islandora_pathauto_islandora_object_alter($original, $context) {
-  $object = (object) array(
-      'id' => $original->id,
-      'label' => $original->label,
-      'models' => $original->models,
+function islandora_pathauto_islandora_object_alter($original, $context)
+{
+  $object = (object)array(
+    'id' => $original->id,
+    'label' => $original->label,
+    'models' => $original->models,
   );
 
   # The object does not have the new label yet. Nasty fix to get it from $context.
-  if (isset($context['action']) and $context['action']=='modify') {
-      if (isset($context['params']['label'])){
-          $object->label = $context['params']['label'];
-      }
+  if (isset($context['action']) and $context['action'] == 'modify') {
+    if (isset($context['params']['label'])) {
+      $object->label = $context['params']['label'];
+    }
   }
   islandora_pathauto_create_alias($object, 'update');
 }
@@ -71,48 +124,48 @@ function islandora_pathauto_islandora_object_alter($original, $context) {
 /**
  * Implements hook_islandora_object_purged.
  */
-function islandora_pathauto_islandora_object_purged($pid) {
+function islandora_pathauto_islandora_object_purged($pid)
+{
   pathauto_path_delete_all('islandora/object/' . $pid);
 }
+
 /**
  * Implements hook_pathauto_bulkupdate.
  */
-function islandora_pathauto_pathauto_bulkupdate(){
-    module_load_include('inc', 'islandora', 'includes/utilites');
-    // HARDCODED QUERY BELOW!! FIXME
-    $query = 'SELECT $object $title $content
+function islandora_pathauto_pathauto_bulkupdate()
+{
+  module_load_include('inc', 'islandora', 'includes/utilites');
+  // HARDCODED QUERY BELOW!! FIXME
+  $query = 'SELECT $object $title $content
         FROM <#ri>
         WHERE {
             $object <fedora-model:label> $title ;
             <fedora-model:hasModel> $content ;
             <fedora-model:state> <fedora-model:Active> .
             FILTER(!sameTerm($content, <info:fedora/fedora-system:FedoraObject-3.0>))';
-    $enforced = variable_get('islandora_namespace_restriction_enforced', FALSE);
-    # If enforced, get permissible namespaces and join them with pipes here. Skipped for brevity.
-    $query .= '} ORDER BY $title';
-    $tuque = islandora_get_tuque_connection();
+  $enforced = variable_get('islandora_namespace_restriction_enforced', FALSE);
+  # If enforced, get permissible namespaces and join them with pipes here. Skipped for brevity.
+  $query .= '} ORDER BY $title';
+  $tuque = islandora_get_tuque_connection();
   if ($tuque) {
     try {
-        $results = $tuque->repository->ri->query($query, 'sparql');
-        $count = 0;
-        foreach ($results as $result) {
-            $pid = $result['object']['value'];
-            $object = islandora_object_load($pid);
-            islandora_pathauto_create_alias($object, 'bulkupdate');
-            $count++;
-        }
-        drupal_set_message($count . ' object aliases were updated.');
-    }
-    catch (Exception $e) {
+      $results = $tuque->repository->ri->query($query, 'sparql');
+      $count = 0;
+      foreach ($results as $result) {
+        $pid = $result['object']['value'];
+        $object = islandora_object_load($pid);
+        islandora_pathauto_create_alias($object, 'bulkupdate');
+        $count++;
+      }
+      drupal_set_message($count . ' object aliases were updated.');
+    } catch (Exception $e) {
       if ($e->getCode() == '404') {
         return FALSE;
-      }
-      else {
+      } else {
         return NULL;
       }
     }
-  }
-  else {
+  } else {
     IslandoraTuque::getError();
   }
   // Assuming access denied in all other cases for now.
@@ -123,55 +176,59 @@ function islandora_pathauto_pathauto_bulkupdate(){
 /*
  * Implements hook_path_alias_types().
  */
-function islandora_pathauto_path_alias_types(){
-    $objects['islandora/object/pubs:9'] = t('Islandora'); #FIXME
-    return $objects;
+function islandora_pathauto_path_alias_types()
+{
+  $objects['islandora/object/pubs:9'] = t('Islandora'); #FIXME
+  return $objects;
 }
-/* 
+
+/*
  * Implements hook_token_info.
  */
-function islandora_pathauto_token_info() {
-    $info['types']['fedora'] = array(
-        'name' => 'Fedora object tokens',
-        'description' => t('Tokens for islandora relating to fedora objects'),
-        'needs-data' => 'fedora',
-    );
-    $info['tokens']['fedora']['pid'] = array(
-        'name' => t('Object PID'),
-        'description' => t('Full PID of object in Fedora repository'),
-    );
-    $info['tokens']['fedora']['label'] = array(
-        'name' => t('Object label'),
-        'description' => t('Fedora object label'),
-    );
-    $info['tokens']['fedora']['shortpid'] = array(
-        'name' => t('Short PID'),
-        'description' => t('Fedora object pid without namespace'),
-    );
+function islandora_pathauto_token_info()
+{
+  $info['types']['fedora'] = array(
+    'name' => 'Fedora object tokens',
+    'description' => t('Tokens for islandora relating to fedora objects'),
+    'needs-data' => 'fedora',
+  );
+  $info['tokens']['fedora']['pid'] = array(
+    'name' => t('Object PID'),
+    'description' => t('Full PID of object in Fedora repository'),
+  );
+  $info['tokens']['fedora']['label'] = array(
+    'name' => t('Object label'),
+    'description' => t('Fedora object label'),
+  );
+  $info['tokens']['fedora']['shortpid'] = array(
+    'name' => t('Short PID'),
+    'description' => t('Fedora object pid without namespace'),
+  );
 
-    return $info;
+  return $info;
 }
 
-/** 
+/**
  * Implements hook_tokens.
  */
-function islandora_pathauto_tokens($type, $tokens, array $data = array(), array $options = array()) {
-    if ($type == 'fedora' & !empty($data['fedora'])) {
-        $object = $data['fedora'];
-        $replacements = array();
-        foreach ($tokens as $name => $original) {
-            if ($name == 'pid') {
-                $replacements[$original] = $object->id;
-            }
-            if ($name == 'shortpid') {
-                $temp = explode(':', $object->id, 2);
-                $replacements[$original] = $temp[1];
-            }
-            if ($name == 'label') {
-                $replacements[$original] = $object->label;
-            }
-        }
-    return $replacements;
+function islandora_pathauto_tokens($type, $tokens, array $data = array(), array $options = array())
+{
+  if ($type == 'fedora' & !empty($data['fedora'])) {
+    $object = $data['fedora'];
+    $replacements = array();
+    foreach ($tokens as $name => $original) {
+      if ($name == 'pid') {
+        $replacements[$original] = $object->id;
+      }
+      if ($name == 'shortpid') {
+        $temp = explode(':', $object->id, 2);
+        $replacements[$original] = $temp[1];
+      }
+      if ($name == 'label') {
+        $replacements[$original] = $object->label;
+      }
     }
-    return array();
+    return $replacements;
+  }
+  return array();
 }
