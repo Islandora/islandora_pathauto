@@ -204,7 +204,10 @@ function islandora_pathauto_token_info()
     'name' => t('Short PID'),
     'description' => t('Fedora object pid without namespace'),
   );
-
+  $info['tokens']['fedora']['namespace'] = array(
+    'name' => t('Namespace'),
+    'description' => t('Fedora object namespace'),
+  );
   return $info;
 }
 
@@ -223,6 +226,10 @@ function islandora_pathauto_tokens($type, $tokens, array $data = array(), array 
       if ($name == 'shortpid') {
         $temp = explode(':', $object->id, 2);
         $replacements[$original] = $temp[1];
+      }
+      if ($name == 'namespace') {
+        $temp = explode(':', $object->id, 2);
+        $replacements[$original] = $temp[0];
       }
       if ($name == 'label') {
         $replacements[$original] = $object->label;
