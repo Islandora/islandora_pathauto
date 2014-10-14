@@ -15,7 +15,7 @@ Configuration
 -------------
 
 To enable pathauto for a content model visit Administration >> Islandora >> Islandora Utility 
-Moduls >> Pathauto (admin/islandora/tools/islandora-pathauto). To configure the aliases that pathauto
+Modules >> Pathauto (admin/islandora/tools/islandora-pathauto). To configure the aliases that pathauto
 will create, visit Administration >> Configuration >> Search and Metadata >> URL Aliases >> Patterns 
 (admin/config/search/path/patterns). You can create aliases including the object's pid ([fedora:pid]), 
 the Fedora label ([fedora:label]), and/or the pid without the namespace ([fedora:shortpid]). See the documentation
