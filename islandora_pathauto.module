@@ -83,12 +83,17 @@ function islandora_pathauto_create_alias($object, $op, $params = NULL)
 {
   module_load_include('inc', 'pathauto');
   $path = 'islandora/object/' . $object->id;
+  $count = 0;
   foreach ($object->models as $cmodel) {
     if (substr($cmodel, 0, 11) == 'info:fedora') {
       $cmodel = substr($cmodel, 12);
     }
-    pathauto_create_alias('islandora', $op, $path, array('fedora' => $object), $cmodel);
+    $result = pathauto_create_alias('islandora', $op, $path, array('fedora' => $object), $cmodel);
+    if ($result != '') {
+      $count++;
+    }
   }
+  return $count;
 }
 
 // $module, $op, $source, $data, $type = NULL, $language = LANGUAGE_NONE)
@@ -136,13 +141,13 @@ function islandora_pathauto_pathauto_bulkupdate()
 {
   module_load_include('inc', 'islandora', 'includes/utilites');
   // HARDCODED QUERY BELOW!! FIXME
-  $query = 'SELECT $object $title $content
+  $query = 'SELECT $object $title $cmodel
         FROM <#ri>
         WHERE {
             $object <fedora-model:label> $title ;
-            <fedora-model:hasModel> $content ;
+            <fedora-model:hasModel> $cmodel ;
             <fedora-model:state> <fedora-model:Active> .
-            FILTER(!sameTerm($content, <info:fedora/fedora-system:FedoraObject-3.0>))';
+            FILTER(!sameTerm($cmodel, <info:fedora/fedora-system:FedoraObject-3.0>))';
   $enforced = variable_get('islandora_namespace_restriction_enforced', FALSE);
   # If enforced, get permissible namespaces and join them with pipes here. Skipped for brevity.
   $query .= '} ORDER BY $title';
@@ -154,10 +159,12 @@ function islandora_pathauto_pathauto_bulkupdate()
       foreach ($results as $result) {
         $pid = $result['object']['value'];
         $object = islandora_object_load($pid);
-        islandora_pathauto_create_alias($object, 'bulkupdate');
-        $count++;
+        $result = islandora_pathauto_create_alias($object, 'bulkupdate');
+        if ($result != '') {
+          $count += $result;
+        }
       }
-      drupal_set_message($count . ' object aliases were updated.');
+      drupal_set_message($count . ' islandora aliases were updated.');
     } catch (Exception $e) {
       if ($e->getCode() == '404') {
         return FALSE;
@@ -178,7 +185,7 @@ function islandora_pathauto_pathauto_bulkupdate()
  */
 function islandora_pathauto_path_alias_types()
 {
-  $objects['islandora/object/pubs:9'] = t('Islandora'); #FIXME
+  $objects['islandora/object/'] = t('Islandora');
   return $objects;
 }
 
