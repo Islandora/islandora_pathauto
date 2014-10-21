@@ -140,7 +140,6 @@ function islandora_pathauto_islandora_object_purged($pid)
 function islandora_pathauto_pathauto_bulkupdate()
 {
   module_load_include('inc', 'islandora', 'includes/utilites');
-  // HARDCODED QUERY BELOW!! FIXME
   $query = 'SELECT $object $title $cmodel
         FROM <#ri>
         WHERE {
