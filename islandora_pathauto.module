@@ -88,13 +88,11 @@ function islandora_pathauto_pathauto($op)
  * @param $op
  *   The operation to perform: 'insert' or 'update'.
  *
- * @param null $params
- *
  * @return int
  *   Returns the number of aliases generated from this object; may be >1 if the object
  *   has multiple content models.
  */
-function islandora_pathauto_create_alias($object, $op, $params = NULL)
+function islandora_pathauto_create_alias($object, $op)
 {
   module_load_include('inc', 'pathauto');
   $path = 'islandora/object/' . $object->id;
