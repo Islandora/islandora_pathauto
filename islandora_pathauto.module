@@ -39,6 +39,9 @@ function islandora_pathauto_permission()
   );
 }
 
+/**
+ * Implements hook_theme().
+ */
 function islandora_pathauto_theme($existing, $type, $theme, $path)
 {
   return array(
@@ -51,7 +54,6 @@ function islandora_pathauto_theme($existing, $type, $theme, $path)
 /**
  * Implements hook_pathauto().
  */
-
 function islandora_pathauto_pathauto($op)
 {
   module_load_include('inc', 'islandora', 'includes/utilities');
@@ -71,14 +73,27 @@ function islandora_pathauto_pathauto($op)
       $cmodels[$key] = $value;
     }
   }
-
-
   foreach ($cmodels as $cmodel) {
     $settings->patternitems[$cmodel['pid']] = t('Pattern for all ' . $cmodel['label'] . ' objects');
   }
   return $settings;
 }
 
+/**
+ * Wrapper to pathauto_create_alias().
+ *
+ * @param $object
+ *   an Islandora object
+ *
+ * @param $op
+ *   The operation to perform: 'insert' or 'update'.
+ *
+ * @param null $params
+ *
+ * @return int
+ *   Returns the number of aliases generated from this object; may be >1 if the object
+ *   has multiple content models.
+ */
 function islandora_pathauto_create_alias($object, $op, $params = NULL)
 {
   module_load_include('inc', 'pathauto');
@@ -146,10 +161,9 @@ function islandora_pathauto_pathauto_bulkupdate()
             $object <fedora-model:label> $title ;
             <fedora-model:hasModel> $cmodel ;
             <fedora-model:state> <fedora-model:Active> .
-            FILTER(!sameTerm($cmodel, <info:fedora/fedora-system:FedoraObject-3.0>))';
-  $enforced = variable_get('islandora_namespace_restriction_enforced', FALSE);
-  # If enforced, get permissible namespaces and join them with pipes here. Skipped for brevity.
-  $query .= '} ORDER BY $title';
+            FILTER(!sameTerm($cmodel, <info:fedora/fedora-system:FedoraObject-3.0>))
+            }
+            ORDER BY $title';
   $tuque = islandora_get_tuque_connection();
   if ($tuque) {
     try {
