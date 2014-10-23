@@ -44,8 +44,3 @@ Edge Cases
 If you have an object with multiple pathauto-enabled content models, then two aliases for that object will be created.
 This may cause unpredictable behaviour if you use Global Redirect to force a single, "canonical" alias. 
 
-Known Issues
-------------
-
-Delete all Islandora aliases is not yet implemented.
-
