@@ -1,13 +1,21 @@
 <?php
 
-function islandora_pathauto_admin_settings(array $form, array &$form_state){
+/**
+ * @file
+ * Admin callbacks for islandora_pathauto.
+ */
+
+/**
+ * Admin form.
+ */
+function islandora_pathauto_admin_settings(array $form, array &$form_state) {
   module_load_include('inc', 'islandora', 'includes/utilities');
   drupal_add_css(drupal_get_path('module', 'islandora_image_annotation') . '/css/islandora_annotation.css');
   $all_cmodels = islandora_get_content_models();
   $already_chosen = variable_get('islandora_pathauto_selected_cmodels', array());
 
   foreach ($already_chosen as $chosen) {
-    $value  = isset($all_cmodels[$chosen]) ? $all_cmodels[$chosen] : array('pid' => '', 'label' => '');
+    $value = isset($all_cmodels[$chosen]) ? $all_cmodels[$chosen] : array('pid' => '', 'label' => '');
     unset($all_cmodels[$chosen]);
     $all_cmodels = array($chosen => $value) + $all_cmodels;
   }
@@ -18,13 +26,13 @@ function islandora_pathauto_admin_settings(array $form, array &$form_state){
     '#collapsible' => FALSE,
     '#collapsed' => FALSE,
   );
-  $form['content_model_wrapper']['pathauto_table'] = array(
+  $form['content_model_wrapper']['pathauto_table'] = [
     '#type' => 'item',
     '#title' => t('Enable pathauto for these content models'),
-    '#description' => t('Configure aliases under Pathauto config: ') . l('admin/config/search/path/patterns', 'admin/config/search/path/patterns'),
+    '#description' => t('Configure aliases under Pathauto config: @link'), array("@link" => l(t('admin/config/search/path/patterns'), 'admin/config/search/path/patterns')),
     '#tree' => TRUE,
     '#theme' => 'islandora_pathauto_admin_table',
-  );
+  ];
   $alink_options = array(
     'attributes' => array('target' => '_blank'),
     'html' => TRUE,
@@ -63,13 +71,11 @@ function islandora_pathauto_admin_settings(array $form, array &$form_state){
 }
 
 /**
- * Submit handler for form
- *
+ * Submit handler for admin form.
  */
-function islandora_pathauto_admin_settings_submit($form, &$form_state){
+function islandora_pathauto_admin_settings_submit($form, &$form_state) {
   $enabled = array_filter($form_state['values']['pathauto_table']['enabled']);
   variable_set('islandora_pathauto_selected_cmodels', array_keys($enabled));
-
 }
 
 
