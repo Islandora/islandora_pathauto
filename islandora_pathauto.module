@@ -89,7 +89,7 @@ function islandora_pathauto_pathauto($op) {
  *   Returns the number of aliases generated from this object;
  *   may be >1 if the object has multiple content models.
  */
-function islandora_pathauto_create_alias(FedoraObject $object, $op) {
+function islandora_pathauto_create_alias($object, $op) {
   module_load_include('inc', 'pathauto');
   $path = 'islandora/object/' . $object->id;
   $count = 0;
