@@ -32,8 +32,8 @@ By default, Pathauto removes punctuation such as the colon (:) from paths before
  
 ### Edge Cases
 
-If you have an object with multiple pathauto-enabled content models, then two aliases for that object will be created.
-This may cause unpredictable behaviour if you use Global Redirect to force a single, "canonical" alias. 
+Multiple aliases for the same object are not supported. All objects should have at most one of their content models 
+enabled for pathauto. 
 
 ## Maintainers/Sponsors
 
