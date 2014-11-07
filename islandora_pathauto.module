@@ -93,10 +93,13 @@ function islandora_pathauto_create_alias($object, $op) {
   module_load_include('inc', 'pathauto');
   $path = 'islandora/object/' . $object->id;
   $count = 0;
-  foreach ($object->models as $cmodel) {
-    if (substr($cmodel, 0, 11) == 'info:fedora') {
-      $cmodel = substr($cmodel, 12);
-    }
+  // Give priority to any cmodels that are enabled for pathauto.
+  $all_enabled = variable_get('islandora_pathauto_selected_cmodels', array());
+  $models = array_intersect($object->models, $all_enabled);
+  if (!$models) {
+    $models = $object->models;
+  }
+  foreach ($models as $cmodel) {
     $result = pathauto_create_alias('islandora', $op, $path, array('fedora' => $object), $cmodel);
     if ($result != '') {
       $count++;
@@ -161,6 +164,11 @@ function islandora_pathauto_pathauto_bulkupdate() {
       foreach ($results as $result) {
         $pid = $result['object']['value'];
         $object = islandora_object_load($pid);
+        ## fixme debug
+        $models = $object->models;
+        if (in_array('islandora:collectionCModel', $models)) {
+          $a = 12;
+        }
         $result = islandora_pathauto_create_alias($object, 'bulkupdate');
         if ($result != '') {
           $count += $result;
