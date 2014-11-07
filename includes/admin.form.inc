@@ -30,7 +30,7 @@ function islandora_pathauto_admin_settings(array $form, array &$form_state) {
   $form['content_model_wrapper']['pathauto_table'] = array(
     '#type' => 'item',
     '#title' => t('Enable pathauto for these content models'),
-    '#description' => t('Configure aliases under Pathauto config: @link', array('@link' => $config_link)),
+    '#description' => t('Configure aliases under Pathauto config: !link', array('!link' => $config_link)),
     '#tree' => TRUE,
     '#theme' => 'islandora_pathauto_admin_table',
   );
