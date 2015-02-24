@@ -13,7 +13,6 @@ function islandora_pathauto_admin_settings(array $form, array &$form_state) {
   drupal_add_css(drupal_get_path('module', 'islandora_image_annotation') . '/css/islandora_annotation.css');
   $all_cmodels = islandora_get_content_models();
   $already_chosen = variable_get('islandora_pathauto_selected_cmodels', array());
-  $config_link = l(t('admin/config/search/path/patterns'), 'admin/config/search/path/patterns');
 
   foreach ($already_chosen as $chosen) {
     $value = isset($all_cmodels[$chosen]) ? $all_cmodels[$chosen] : array('pid' => '', 'label' => '');
@@ -30,7 +29,9 @@ function islandora_pathauto_admin_settings(array $form, array &$form_state) {
   $form['content_model_wrapper']['pathauto_table'] = array(
     '#type' => 'item',
     '#title' => t('Enable pathauto for these content models'),
-    '#description' => t('Configure aliases under Pathauto config: !link', array('!link' => $config_link)),
+    '#description' => t('Configure aliases under Pathauto config: !link', array(
+      '!link' => l(t('admin/config/search/path/patterns'), 'admin/config/search/path/patterns')
+    )),
     '#tree' => TRUE,
     '#theme' => 'islandora_pathauto_admin_table',
   );
