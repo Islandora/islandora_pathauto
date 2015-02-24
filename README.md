@@ -18,9 +18,9 @@ Install as usual, see [this](https://drupal.org/documentation/install/modules-th
 
 Enable which content models Islandora Pathauto uses at Administration » Islandora » Islandora Utility Modules » Pathauto (admin/islandora/tools/islandora-pathauto).
 
-To configure the aliases that pathauto will create, visit Administration » Configuration » Search and Metadata » URL Aliases » Patterns (admin/config/search/path/patterns). 
+Configure how pathauto creates aliases at Administration » Configuration » Search and Metadata » URL Aliases » Patterns (admin/config/search/path/patterns).
 
-You can create aliases including the object's pid (`[fedora:pid]`), the Fedora label (`[fedora:label]`), the namespace (`[fedora:namespace]`), and/or the pid without the namespace (`[fedora:shortpid]`). See the documentation for [Pathauto](https://www.drupal.org/documentation/modules/pathauto) for more information on creating aliases.
+Aliases can include the object's pid (`[fedora:pid]`), the Fedora label (`[fedora:label]`), the namespace (`[fedora:namespace]`), and/or the pid without the namespace (`[fedora:shortpid]`). See the documentation for [Pathauto](https://www.drupal.org/documentation/modules/pathauto) for more information on creating aliases.
 
 ![Configuration](https://raw.githubusercontent.com/wiki/Islandora/islandora_pathauto/images/islandora-pathauto-configuration.png)
 
@@ -35,26 +35,19 @@ Having problems or solved a problem? Check out the Islandora google groups for a
 
 Q. Why don't the datastreams also follow the alias of the object?
 
-A. With pathauto alone, datastreams are NOT accessible at [object alias]/datastream/DSID. To get this functionality,
-enable the Drupal moodule [Sub-pathauto](https://www.drupal.org/project/subpathauto) and configure the maximum depth
-of sub-paths to be at least 3.
+A. With pathauto alone, datastreams are NOT accessible at [object alias]/datastream/DSID. To get this functionality, enable the Drupal moodule [Sub-pathauto](https://www.drupal.org/project/subpathauto) and configure the maximum depth of sub-paths to be at least 3.
 
 Q. Why is my object still visible at /islandora/object/PID?
 
-A. Drupal aliases don't negate internal paths like islandora/object/PID. If you want the original islandora URLs to
-resolve (i.e. redirect) to the aliases, then enable
-[Global Redirect](https://www.drupal.org/project/globalredirect).
+A. Drupal aliases don't negate internal paths like islandora/object/PID. If you want the original islandora URLs to resolve (i.e. redirect) to the aliases, then enable [Global Redirect](https://www.drupal.org/project/globalredirect).
 
 Q. Where'd the colon in my PID go?
 
-A. By default, Pathauto removes punctuation such as the colon (:) from paths before creating aliases.
-This will result in PIDs that look like islandora123; if this is undesirable then configure the Pathauto setting under
-"punctuation"  at admin/config/search/path/settings to not remove the colon.
+A. By default, Pathauto removes punctuation such as the colon (:) from paths before creating aliases. This will result in PIDs that look like islandora123; if this is undesirable then configure the Pathauto setting under "punctuation"  at admin/config/search/path/settings to not remove the colon.
  
 Q. What if I have multiple content models for the same object? Can I give it multiple aliases?
 
-A. No. Multiple aliases for the same object are not supported. All objects should have at most one of their content models
-enabled for pathauto.
+A. No. Multiple aliases for the same object are not supported. All objects should have at most one of their content models enabled for pathauto.
 
 ## Maintainers/Sponsors
 
