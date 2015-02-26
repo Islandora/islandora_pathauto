@@ -16,24 +16,38 @@ Install as usual, see [this](https://drupal.org/documentation/install/modules-th
 
 ## Configuration
 
-To enable Islandora Pathauto for a content model visit Administration » Islandora » Islandora Utility Modules » Pathauto (admin/islandora/tools/islandora-pathauto). 
+Enable which content models Islandora Pathauto uses at Administration » Islandora » Islandora Utility Modules » Pathauto (admin/islandora/tools/islandora-pathauto).
 
-To configure the aliases that pathauto will create, visit Administration » Configuration » Search and Metadata » URL Aliases » Patterns (admin/config/search/path/patterns). 
+Configure how pathauto creates aliases at Administration » Configuration » Search and Metadata » URL Aliases » Patterns (admin/config/search/path/patterns).
 
-You can create aliases including the object's pid (`[fedora:pid]`), the Fedora label (`[fedora:label]`), the namespace (`[fedora:namespace]`), and/or the pid without the namespace (`[fedora:shortpid]`). See the documentation for [Pathauto](https://www.drupal.org/documentation/modules/pathauto) for more information on creating aliases.
+Aliases can include the object's pid (`[fedora:pid]`), the Fedora label (`[fedora:label]`), the namespace (`[fedora:namespace]`), and/or the pid without the namespace (`[fedora:shortpid]`). See the documentation for [Pathauto](https://www.drupal.org/documentation/modules/pathauto) for more information on creating aliases.
 
-### Suggested Implementation
+![Configuration](https://raw.githubusercontent.com/wiki/Islandora/islandora_pathauto/images/islandora-pathauto-configuration.png)
 
-Without [Sub-pathauto](https://www.drupal.org/project/subpathauto), Islandora objects will be viewable at configured aliases, but the datastreams (i.e. [OBJECT] + /datastream/DSID/view) will only be accessible at the original URL, islandora/object/PID/datastream/DSID/view. If you want datastreams to be visible at OBJECT-ALIAS/datastream/DSID/view, then enable Sub-pathauto and set the maximum depth of sub-paths to at least 3.
+## Troubleshooting/Issues
 
-When Drupal creates a link to an aliased object, it will direct the user to the pretty URL. But if the user navigates directly to islandora/object/PID (i.e. types it in the address bar), they will also get the object page. If you want the original islandora URLs to resolve (i.e. redirect) to the aliases, then enable [Global Redirect](https://www.drupal.org/project/globalredirect). 
+Having problems or solved a problem? Check out the Islandora google groups for a solution.
 
-By default, Pathauto removes punctuation such as the colon (:) from paths before creating aliases. This will result in PIDs that look like islandora123; if this is undesirable then there's a setting under "punctuation" for Pathauto at admin/config/search/path/settings to not remove the colon.
+* [Islandora Group](https://groups.google.com/forum/?hl=en&fromgroups#!forum/islandora)
+* [Islandora Dev Group](https://groups.google.com/forum/?hl=en&fromgroups#!forum/islandora-dev)
+
+## FAQ
+
+Q. Why don't the datastreams also follow the alias of the object?
+
+A. With pathauto alone, datastreams are NOT accessible at [object alias]/datastream/DSID. To get this functionality, enable the Drupal moodule [Sub-pathauto](https://www.drupal.org/project/subpathauto) and configure the maximum depth of sub-paths to be at least 3.
+
+Q. Why is my object still visible at /islandora/object/PID?
+
+A. Drupal aliases don't negate internal paths like islandora/object/PID. If you want the original islandora URLs to resolve (i.e. redirect) to the aliases, then enable [Global Redirect](https://www.drupal.org/project/globalredirect).
+
+Q. Where'd the colon in my PID go?
+
+A. By default, Pathauto removes punctuation such as the colon (:) from paths before creating aliases. This will result in PIDs that look like islandora123; if this is undesirable then configure the Pathauto setting under "punctuation"  at admin/config/search/path/settings to not remove the colon.
  
-### Edge Cases
+Q. What if I have multiple content models for the same object? Can I give it multiple aliases?
 
-Multiple aliases for the same object are not supported. All objects should have at most one of their content models 
-enabled for pathauto. 
+A. No. Multiple aliases for the same object are not supported. All objects should have at most one of their content models enabled for pathauto.
 
 ## Maintainers/Sponsors
 
