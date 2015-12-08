@@ -18,11 +18,16 @@ Install as usual, see [this](https://drupal.org/documentation/install/modules-th
 
 Enable which content models Islandora Pathauto uses at Administration » Islandora » Islandora Utility Modules » Pathauto (admin/islandora/tools/islandora-pathauto).
 
-Configure how pathauto creates aliases at Administration » Configuration » Search and Metadata » URL Aliases » Patterns (admin/config/search/path/patterns).
+![Configuration](https://raw.githubusercontent.com/wiki/Islandora/islandora_pathauto/images/islandora-pathauto-configuration.png)
+
+Configure how pathauto creates aliases at Administration » Configuration » Search and Metadata » URL Aliases » Patterns (admin/config/search/path/patterns). 
+
+If a path is specified as the "Default path pattern", it will be applied to all objects that don't have a path configured specific to their content model. If you want pathauto to ignore all objects except those of a certain content model, then leave the Default path pattern blank.   
+
+![Configuration](https://raw.githubusercontent.com/wiki/Islandora/islandora_pathauto/images/sample-pathauto-configuration.png)
 
 Aliases can include the object's pid (`[fedora:pid]`), the Fedora label (`[fedora:label]`), the namespace (`[fedora:namespace]`), and/or the pid without the namespace (`[fedora:shortpid]`). See the documentation for [Pathauto](https://www.drupal.org/documentation/modules/pathauto) for more information on creating aliases.
 
-![Configuration](https://raw.githubusercontent.com/wiki/Islandora/islandora_pathauto/images/islandora-pathauto-configuration.png)
 
 ## Documentation
 
