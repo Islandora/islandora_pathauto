@@ -33,7 +33,7 @@ function islandora_pathauto_permission() {
   return array(
     'administer islandora_pathauto' => array(
       'title' => t('Administer Islandora Pathauto'),
-      'description' => t('Select content models available for Islandora Pathauto.'),
+      'description' => t('Select content models available for custom Islandora Pathauto patterns.'),
     ),
   );
 }
@@ -57,7 +57,7 @@ function islandora_pathauto_pathauto($op) {
   $settings = new stdClass();
   $settings->module = 'islandora';
   $settings->groupheader = t('Islandora object paths');
-  $settings->patterndescr = t('Default path pattern (applies to all Islandora objects)');
+  $settings->patterndescr = t('All Islandora objects (except those with custom paths specified below)');
   $settings->patterndefault = '';
   $settings->token_type = 'fedora';
   $settings->patternitems = array();
