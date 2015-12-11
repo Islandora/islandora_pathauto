@@ -16,13 +16,17 @@ Install as usual, see [this](https://drupal.org/documentation/install/modules-th
 
 ## Configuration
 
-Enable which content models Islandora Pathauto uses at Administration » Islandora » Islandora Utility Modules » Pathauto (admin/islandora/tools/islandora-pathauto).
+Configure the path patterns using the usual Pathauto interface, at Administration » Configuration » Search and Metadata » URL Aliases » Patterns (admin/config/search/path/patterns). 
 
-Configure how pathauto creates aliases at Administration » Configuration » Search and Metadata » URL Aliases » Patterns (admin/config/search/path/patterns).
+![Pathauto Configuration](https://raw.githubusercontent.com/wiki/Islandora/islandora_pathauto/images/sample-pathauto-configuration.png)
 
-Aliases can include the object's pid (`[fedora:pid]`), the Fedora label (`[fedora:label]`), the namespace (`[fedora:namespace]`), and/or the pid without the namespace (`[fedora:shortpid]`). See the documentation for [Pathauto](https://www.drupal.org/documentation/modules/pathauto) for more information on creating aliases.
+You can set one pattern to apply to all Islandora objects, and/or select individual content models to have custom path 
+formats. To enable custom paths for specific content models, first enable the desired content models at Administration »
+ Islandora » Islandora Utility Modules » Pathauto (admin/islandora/tools/islandora-pathauto).
 
 ![Configuration](https://raw.githubusercontent.com/wiki/Islandora/islandora_pathauto/images/islandora-pathauto-configuration.png)
+
+Aliases can include the object's pid (`[fedora:pid]`), the Fedora label (`[fedora:label]`), the namespace (`[fedora:namespace]`), and/or the pid without the namespace (`[fedora:shortpid]`). See the documentation for [Pathauto](https://www.drupal.org/documentation/modules/pathauto) for more information on creating aliases, and read the FAQ below.
 
 ## Documentation
 
@@ -49,6 +53,10 @@ Q. Where'd the colon in my PID go?
 
 A. By default, Pathauto removes punctuation such as the colon (:) from paths before creating aliases. This will result in PIDs that look like islandora123; if this is undesirable then configure the Pathauto setting under "punctuation"  at admin/config/search/path/settings to not remove the colon.
  
+Q. Can I use this module to make the colon to show up as ':' instead of '%3A'?
+
+A. No. Sorry. This happens deep in Drupal's internal link-writing code. 
+
 Q. What if I have multiple content models for the same object? Can I give it multiple aliases?
 
 A. No. Multiple aliases for the same object are not supported. All objects should have at most one of their content models enabled for pathauto.

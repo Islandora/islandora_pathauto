@@ -22,13 +22,13 @@ function islandora_pathauto_admin_settings(array $form, array &$form_state) {
 
   $form['content_model_wrapper'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Configure Content Models'),
+    '#title' => t('Configure which content models are exposed to custom aliases'),
     '#collapsible' => FALSE,
     '#collapsed' => FALSE,
   );
   $form['content_model_wrapper']['pathauto_table'] = array(
     '#type' => 'item',
-    '#title' => t('Enable pathauto for these content models'),
+    '#title' => t('Enable custom pathauto settings for these content models'),
     '#description' => t('Configure aliases under Pathauto config: !link', array(
       '!link' => l(t('admin/config/search/path/patterns'), 'admin/config/search/path/patterns'),
     )),
