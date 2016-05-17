@@ -79,7 +79,7 @@ function islandora_pathauto_pathauto($op) {
 /**
  * Wrapper to pathauto_create_alias().
  *
- * @param FedoraObject $object
+ * @param FedoraObject|IslandoraFedoraObjectReadOnly $object
  *   an Islandora object
  *
  * @param string $op
@@ -263,7 +263,7 @@ class IslandoraFedoraObjectReadOnly implements ArrayAccess {
     if ($name == 'label') {
       $this->_label = $value;
     }
-    return;  // DO NOTHING
+    return;  // Do nothing.
   }
 
   public function __get($name) {
@@ -282,10 +282,10 @@ class IslandoraFedoraObjectReadOnly implements ArrayAccess {
   }
 
   public function offsetSet($offset, $value) {
-    return;  // DO nothing
+    return;  // Do nothing.
   }
 
   public function offsetUnset($offset) {
-    return;  // DO nothing
+    return;  // Do nothing.
   }
 }
