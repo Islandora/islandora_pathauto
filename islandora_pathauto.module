@@ -119,14 +119,12 @@ function islandora_pathauto_islandora_object_ingested($object) {
  * Implements hook_islandora_object_alter().
  */
 function islandora_pathauto_islandora_object_alter($original, $context) {
-  $object = (object) array(
-    'id' => $original->id,
-    'label' => $original->label,
-    'models' => $original->models,
-  );
 
-  // The object does not have the new label yet.
+  // If the label is what was modified, then
+  // the $original does not have the new label yet.
   // This is a nasty fix to get it from $context.
+  // See ISLANDORA-1072.
+  $object = new IslandoraFedoraObjectReadOnly($original);
   if (isset($context['action']) and $context['action'] == 'modify') {
     if (isset($context['params']['label'])) {
       $object->label = $context['params']['label'];
@@ -250,4 +248,44 @@ function islandora_pathauto_tokens($type, $tokens, array $data = array(), array 
     return $replacements;
   }
   return array();
+}
+
+class IslandoraFedoraObjectReadOnly implements ArrayAccess {
+  private $_fake;
+  private $_label;
+
+  public function __construct($original) {
+    $this->_fake = $original;
+    $this->_label = $original->label;
+  }
+
+  public function __set($name, $value) {
+    if ($name == 'label') {
+      $this->_label = $value;
+    }
+    return;  // DO NOTHING
+  }
+
+  public function __get($name) {
+    if ($name == 'label') {
+      return $this->_label;
+    }
+    return $this->_fake->__get($name);
+  }
+
+  public function offsetExists($offset) {
+    return isset($this->_fake[$offset]);
+  }
+
+  public function offsetGet($offset) {
+    return $this->_fake[$offset];
+  }
+
+  public function offsetSet($offset, $value) {
+    return;  // DO nothing
+  }
+
+  public function offsetUnset($offset) {
+    return;  // DO nothing
+  }
 }
