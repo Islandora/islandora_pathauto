@@ -269,7 +269,7 @@ class IslandoraFedoraObjectReadOnly implements ArrayAccess {
    * Overload assignment to set label and nothing else.
    *
    * @param string $name
-   *   The name of the property being set. Only a name of 'label' will have any effect.
+   *   The name of the property being set. Only 'label' will have any effect.
    * @param mixed $value
    *   The value to which the property should be set.
    */
@@ -312,14 +312,10 @@ class IslandoraFedoraObjectReadOnly implements ArrayAccess {
   /**
    * Implements ArrayAccess.
    */
-  public function offsetSet($offset, $value) {
-    return;
-  }
+  public function offsetSet($offset, $value) {}
 
   /**
    * Implements ArrayAccess.
    */
-  public function offsetUnset($offset) {
-    return;
-  }
+  public function offsetUnset($offset) {}
 }
