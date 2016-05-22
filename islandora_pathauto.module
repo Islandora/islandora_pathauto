@@ -251,41 +251,70 @@ function islandora_pathauto_tokens($type, $tokens, array $data = array(), array 
 }
 
 class IslandoraFedoraObjectReadOnly implements ArrayAccess {
-  private $_fake;
-  private $_label;
+  private $fake;
+  private $savedLabel;
 
+  /**
+   * IslandoraFedoraObjectReadOnly constructor.
+   *
+   * @param FedoraObject $original
+   */
   public function __construct($original) {
-    $this->_fake = $original;
-    $this->_label = $original->label;
+    $this->fake = $original;
+    $this->savedLabel = $original->label;
   }
 
+  /**
+   * Overload assignment to set label and nothing else.
+   *
+   * @param $name
+   * @param $value
+   */
   public function __set($name, $value) {
     if ($name == 'label') {
-      $this->_label = $value;
+      $this->savedLabel = $value;
     }
-    return;  // Do nothing.
+    return;
   }
 
+  /**
+   * Overload get to pull values from original object (except for label).
+   *
+   * @param $name
+   * @return string|void
+   */
   public function __get($name) {
     if ($name == 'label') {
-      return $this->_label;
+      return $this->savedLabel;
     }
-    return $this->_fake->__get($name);
+    return $this->fake->__get($name);
   }
 
+  /**
+   * Implements ArrayAccess.
+   */
   public function offsetExists($offset) {
-    return isset($this->_fake[$offset]);
+    return isset($this->fake[$offset]);
   }
 
+  /**
+   * Implements ArrayAccess.
+   */
   public function offsetGet($offset) {
-    return $this->_fake[$offset];
+    return $this->fake[$offset];
   }
 
+  /**
+   * Implements ArrayAccess.
+   */
   public function offsetSet($offset, $value) {
-    return;  // Do nothing.
+    return;
   }
 
+  /**
+   * Implements ArrayAccess.
+   */
   public function offsetUnset($offset) {
-    return;  // Do nothing.
+    return;
   }
 }
