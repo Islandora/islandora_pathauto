@@ -258,6 +258,7 @@ class IslandoraFedoraObjectReadOnly implements ArrayAccess {
    * IslandoraFedoraObjectReadOnly constructor.
    *
    * @param FedoraObject $original
+   *   The FedoraObject for which this class is a wrapper.
    */
   public function __construct($original) {
     $this->fake = $original;
@@ -267,21 +268,25 @@ class IslandoraFedoraObjectReadOnly implements ArrayAccess {
   /**
    * Overload assignment to set label and nothing else.
    *
-   * @param $name
-   * @param $value
+   * @param string $name
+   *   The name of the property being set. Only a name of 'label' will have any effect.
+   * @param mixed $value
+   *   The value to which the property should be set.
    */
   public function __set($name, $value) {
     if ($name == 'label') {
       $this->savedLabel = $value;
     }
-    return;
   }
 
   /**
    * Overload get to pull values from original object (except for label).
    *
-   * @param $name
+   * @param string $name
+   *   The name of the property to get.
+   *
    * @return string|void
+   *   Returns the value of the property.
    */
   public function __get($name) {
     if ($name == 'label') {
