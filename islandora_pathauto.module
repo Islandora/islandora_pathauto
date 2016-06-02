@@ -79,7 +79,7 @@ function islandora_pathauto_pathauto($op) {
 /**
  * Wrapper to pathauto_create_alias().
  *
- * @param FedoraObject $object
+ * @param FedoraObject|IslandoraFedoraObjectReadOnly $object
  *   an Islandora object
  *
  * @param string $op
@@ -119,14 +119,12 @@ function islandora_pathauto_islandora_object_ingested($object) {
  * Implements hook_islandora_object_alter().
  */
 function islandora_pathauto_islandora_object_alter($original, $context) {
-  $object = (object) array(
-    'id' => $original->id,
-    'label' => $original->label,
-    'models' => $original->models,
-  );
 
-  // The object does not have the new label yet.
+  // If the label is what was modified, then
+  // the $original does not have the new label yet.
   // This is a nasty fix to get it from $context.
+  // See ISLANDORA-1072.
+  $object = new IslandoraFedoraObjectReadOnly($original);
   if (isset($context['action']) and $context['action'] == 'modify') {
     if (isset($context['params']['label'])) {
       $object->label = $context['params']['label'];
@@ -250,4 +248,74 @@ function islandora_pathauto_tokens($type, $tokens, array $data = array(), array 
     return $replacements;
   }
   return array();
+}
+
+class IslandoraFedoraObjectReadOnly implements ArrayAccess {
+  private $fake;
+  private $savedLabel;
+
+  /**
+   * IslandoraFedoraObjectReadOnly constructor.
+   *
+   * @param FedoraObject $original
+   *   The FedoraObject for which this class is a wrapper.
+   */
+  public function __construct($original) {
+    $this->fake = $original;
+    $this->savedLabel = $original->label;
+  }
+
+  /**
+   * Overload assignment to set label and nothing else.
+   *
+   * @param string $name
+   *   The name of the property being set. Only 'label' will have any effect.
+   * @param mixed $value
+   *   The value to which the property should be set.
+   */
+  public function __set($name, $value) {
+    if ($name == 'label') {
+      $this->savedLabel = $value;
+    }
+  }
+
+  /**
+   * Overload get to pull values from original object (except for label).
+   *
+   * @param string $name
+   *   The name of the property to get.
+   *
+   * @return string|void
+   *   Returns the value of the property.
+   */
+  public function __get($name) {
+    if ($name == 'label') {
+      return $this->savedLabel;
+    }
+    return $this->fake->__get($name);
+  }
+
+  /**
+   * Implements ArrayAccess.
+   */
+  public function offsetExists($offset) {
+    return isset($this->fake[$offset]);
+  }
+
+  /**
+   * Implements ArrayAccess.
+   */
+  public function offsetGet($offset) {
+    return $this->fake[$offset];
+  }
+
+  /**
+   * Implements ArrayAccess.
+   */
+  public function offsetSet($offset, $value) {}
+
+  /**
+   * Implements ArrayAccess.
+   */
+  public function offsetUnset($offset) {}
 }
