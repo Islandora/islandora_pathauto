@@ -141,45 +141,102 @@ function islandora_pathauto_islandora_object_purged($pid) {
 }
 
 /**
+ * Gets the module results based on the type of query language specified by islandora_pathauto_query_language
+ *
+ *
+ * @return array 
+ *   results of object, title, cmodel 
+ */
+function islandora_pathauto_get_module_results() {
+  // step 1, get the enabled models
+  $models = variable_get('islandora_pathauto_selected_cmodels', array());
+  // depending on the query language, get the result records that match the enabled models 
+  $query_language = variable_get('islandora_pathauto_query_language', 'islandora_basic_collection_sparql_query_backend');
+  if ($query_language == 'islandora_basic_collection_sparql_query_backend') {
+    $first_contentmodel = array_shift($models);
+    $unions = '';
+    foreach ($models as $contentmodel) {
+      $unions .= 'UNION {
+              $object <fedora-model:label> $title ;
+              <fedora-model:hasModel> $cmodel ;
+              <fedora-model:state> <fedora-model:Active> .
+              FILTER(sameTerm($cmodel, <info:fedora/'.$contentmodel.'>))}
+              }';
+    }
+    $query = 'SELECT $object $title $cmodel
+          FROM <#ri>
+          WHERE { {
+              $object <fedora-model:label> $title ;
+              <fedora-model:hasModel> $cmodel ;
+              <fedora-model:state> <fedora-model:Active> .
+              FILTER(sameTerm($cmodel, <info:fedora/'.$first_contentmodel.'>))
+              }'.
+      $unions.'
+              ORDER BY $title';
+    $tuque = islandora_get_tuque_connection();
+    if ($tuque) {
+      try {
+        $results = $tuque->repository->ri->query($query, 'sparql');
+        return $results;
+      }
+      catch (Exception $e) {
+        return array();
+      }
+    } else {
+      IslandoraTuque::getError();
+    }
+  } elseif ((module_exists('islandora_solr') == true) && ($query_language == 'islandora_solr_query_backend')) {
+    module_load_include('inc', 'islandora_solr_search', 'includes/utilities');
+    $query_processor = new IslandoraSolrQueryProcessor();
+    $query_processor->solrQuery = 'RELS_EXT_hasModel_uri_s:(*'.str_replace(":", "\:", implode(" OR *", $models)).')';
+    $query_processor->solrStart = 0;
+    $query_processor->solrLimit = 1000;
+    $query_processor->solrParams = array(
+      // fl = $object $title $cmodel
+      'fl' => "PID,fgs_label_mt,RELS_EXT_hasModel_uri_s",
+      'fq' => "",
+    );
+    $url = parse_url(variable_get('islandora_solr_url', 'localhost:8080/solr'));
+    $solr = new Apache_Solr_Service($url['host'], $url['port'], $url['path'] . '/');
+    $solr->setCreateDocuments(FALSE);
+    try {
+      $results = $solr->search($query_processor->solrQuery, $query_processor->solrStart, $query_processor->solrLimit, $query_processor->solrParams, 'GET');
+      $tmp = json_decode($results->getRawResponse(), true);
+      $results = array();
+      foreach ($tmp['response']['docs'] as $trip) {
+        $results[]['object']['value'] = $trip['PID'];
+      }
+      return $results;
+    } catch (Exception $e) {
+      return array();
+    }
+  }
+}
+  
+/**
  * Implements hook_pathauto_bulkupdate().
  */
 function islandora_pathauto_pathauto_bulkupdate() {
   module_load_include('inc', 'islandora', 'includes/utilities');
-  $query = 'SELECT $object $title $cmodel
-        FROM <#ri>
-        WHERE {
-            $object <fedora-model:label> $title ;
-            <fedora-model:hasModel> $cmodel ;
-            <fedora-model:state> <fedora-model:Active> .
-            FILTER(!sameTerm($cmodel, <info:fedora/fedora-system:FedoraObject-3.0>))
-            }
-            ORDER BY $title';
-  $tuque = islandora_get_tuque_connection();
-  if ($tuque) {
-    try {
-      $results = $tuque->repository->ri->query($query, 'sparql');
-      $count = 0;
-      foreach ($results as $result) {
-        $pid = $result['object']['value'];
-        $object = islandora_object_load($pid);
-        $result = islandora_pathauto_create_alias($object, 'bulkupdate');
-        if ($result != '') {
-          $count += $result;
-        }
-      }
-      drupal_set_message($count . ' islandora aliases were updated.');
-    }
-    catch (Exception $e) {
-      if ($e->getCode() == '404') {
-        return FALSE;
-      }
-      else {
-        return NULL;
+  $results = islandora_pathauto_get_module_results();
+  try {
+    $count = 0;
+    foreach ($results as $result) {
+      $pid = $result['object']['value'];
+      $object = islandora_object_load($pid);
+      $result = islandora_pathauto_create_alias($object, 'bulkupdate');
+      if ($result != '') {
+        $count += $result;
       }
     }
-  }
-  else {
-    IslandoraTuque::getError();
+    drupal_set_message($count . ' islandora aliases were updated.');
+  } catch (Exception $e) {
+    if ($e->getCode() == '404') {
+      return FALSE;
+    }
+    else {
+      return NULL;
+    }
   }
   // Assuming access denied in all other cases for now.
   return NULL;
