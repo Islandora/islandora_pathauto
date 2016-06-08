@@ -141,7 +141,9 @@ function islandora_pathauto_islandora_object_purged($pid) {
 }
 
 /**
- * Gets the module results based on the type of query language specified by
+ * Gets the islandora_pathauto module results. 
+ *
+ * This is based on the query language specified by
  * islandora_pathauto_query_language.
  *
  *
@@ -162,7 +164,7 @@ function islandora_pathauto_get_module_results() {
               $object <fedora-model:label> $title ;
               <fedora-model:hasModel> $cmodel ;
               <fedora-model:state> <fedora-model:Active> .
-              FILTER(sameTerm($cmodel, <info:fedora/'. $contentmodel .'>))}
+              FILTER(sameTerm($cmodel, <info:fedora/' . $contentmodel . '>))}
               }';
     }
     $query = 'SELECT $object $title $cmodel
@@ -171,8 +173,8 @@ function islandora_pathauto_get_module_results() {
               $object <fedora-model:label> $title ;
               <fedora-model:hasModel> $cmodel ;
               <fedora-model:state> <fedora-model:Active> .
-              FILTER(sameTerm($cmodel, <info:fedora/'. $first_contentmodel .'>))
-              }'. $unions .'
+              FILTER(sameTerm($cmodel, <info:fedora/' . $first_contentmodel . '>))
+              }' . $unions . '
               ORDER BY $title';
     $tuque = islandora_get_tuque_connection();
     if ($tuque) {
@@ -191,7 +193,7 @@ function islandora_pathauto_get_module_results() {
   elseif ((module_exists('islandora_solr') == TRUE) && ($query_language == 'islandora_solr_query_backend')) {
     module_load_include('inc', 'islandora_solr_search', 'includes/utilities');
     $query_processor = new IslandoraSolrQueryProcessor();
-    $query_processor->solrQuery = 'RELS_EXT_hasModel_uri_s:(*'. str_replace(":", "\:", implode(" OR *", $models)) .')';
+    $query_processor->solrQuery = 'RELS_EXT_hasModel_uri_s:(*' . str_replace(":", "\:", implode(" OR *", $models)) . ')';
     $query_processor->solrStart = 0;
     $query_processor->solrLimit = 1000;
     $query_processor->solrParams = array(
