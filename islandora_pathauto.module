@@ -141,16 +141,18 @@ function islandora_pathauto_islandora_object_purged($pid) {
 }
 
 /**
- * Gets the module results based on the type of query language specified by islandora_pathauto_query_language
+ * Gets the module results based on the type of query language specified by
+ * islandora_pathauto_query_language.
  *
  *
- * @return array 
- *   results of object, title, cmodel 
+ * @return array
+ *   results of object, title, cmodel
  */
 function islandora_pathauto_get_module_results() {
-  // step 1, get the enabled models
+  // Step 1, get the enabled models.
   $models = variable_get('islandora_pathauto_selected_cmodels', array());
-  // depending on the query language, get the result records that match the enabled models 
+  // Depending on the query language, get the result records that match the
+  // enabled models.
   $query_language = variable_get('islandora_pathauto_query_language', 'islandora_basic_collection_sparql_query_backend');
   if ($query_language == 'islandora_basic_collection_sparql_query_backend') {
     $first_contentmodel = array_shift($models);
@@ -160,7 +162,7 @@ function islandora_pathauto_get_module_results() {
               $object <fedora-model:label> $title ;
               <fedora-model:hasModel> $cmodel ;
               <fedora-model:state> <fedora-model:Active> .
-              FILTER(sameTerm($cmodel, <info:fedora/'.$contentmodel.'>))}
+              FILTER(sameTerm($cmodel, <info:fedora/'. $contentmodel .'>))}
               }';
     }
     $query = 'SELECT $object $title $cmodel
@@ -169,9 +171,8 @@ function islandora_pathauto_get_module_results() {
               $object <fedora-model:label> $title ;
               <fedora-model:hasModel> $cmodel ;
               <fedora-model:state> <fedora-model:Active> .
-              FILTER(sameTerm($cmodel, <info:fedora/'.$first_contentmodel.'>))
-              }'.
-      $unions.'
+              FILTER(sameTerm($cmodel, <info:fedora/'. $first_contentmodel .'>))
+              }'. $unions .'
               ORDER BY $title';
     $tuque = islandora_get_tuque_connection();
     if ($tuque) {
@@ -182,17 +183,18 @@ function islandora_pathauto_get_module_results() {
       catch (Exception $e) {
         return array();
       }
-    } else {
+    }
+    else {
       IslandoraTuque::getError();
     }
-  } elseif ((module_exists('islandora_solr') == true) && ($query_language == 'islandora_solr_query_backend')) {
+  }
+  elseif ((module_exists('islandora_solr') == TRUE) && ($query_language == 'islandora_solr_query_backend')) {
     module_load_include('inc', 'islandora_solr_search', 'includes/utilities');
     $query_processor = new IslandoraSolrQueryProcessor();
-    $query_processor->solrQuery = 'RELS_EXT_hasModel_uri_s:(*'.str_replace(":", "\:", implode(" OR *", $models)).')';
+    $query_processor->solrQuery = 'RELS_EXT_hasModel_uri_s:(*'. str_replace(":", "\:", implode(" OR *", $models)) .')';
     $query_processor->solrStart = 0;
     $query_processor->solrLimit = 1000;
     $query_processor->solrParams = array(
-      // fl = $object $title $cmodel
       'fl' => "PID,fgs_label_mt,RELS_EXT_hasModel_uri_s",
       'fq' => "",
     );
@@ -201,18 +203,19 @@ function islandora_pathauto_get_module_results() {
     $solr->setCreateDocuments(FALSE);
     try {
       $results = $solr->search($query_processor->solrQuery, $query_processor->solrStart, $query_processor->solrLimit, $query_processor->solrParams, 'GET');
-      $tmp = json_decode($results->getRawResponse(), true);
+      $tmp = json_decode($results->getRawResponse(), TRUE);
       $results = array();
       foreach ($tmp['response']['docs'] as $trip) {
         $results[]['object']['value'] = $trip['PID'];
       }
       return $results;
-    } catch (Exception $e) {
+    }
+    catch (Exception $e) {
       return array();
     }
   }
 }
-  
+
 /**
  * Implements hook_pathauto_bulkupdate().
  */
@@ -230,7 +233,8 @@ function islandora_pathauto_pathauto_bulkupdate() {
       }
     }
     drupal_set_message($count . ' islandora aliases were updated.');
-  } catch (Exception $e) {
+  }
+  catch (Exception $e) {
     if ($e->getCode() == '404') {
       return FALSE;
     }
@@ -376,3 +380,5 @@ class IslandoraFedoraObjectReadOnly implements ArrayAccess {
    */
   public function offsetUnset($offset) {}
 }
+
+?>
