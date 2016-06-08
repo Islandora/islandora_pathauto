@@ -380,5 +380,3 @@ class IslandoraFedoraObjectReadOnly implements ArrayAccess {
    */
   public function offsetUnset($offset) {}
 }
-
-?>
