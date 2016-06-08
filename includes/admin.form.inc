@@ -9,10 +9,11 @@
  * Admin form.
  */
 function islandora_pathauto_admin_settings(array $form, array &$form_state) {
-  // get possible query language types 
+  // Get possible query language types.
   $backend_options = module_invoke_all('islandora_basic_collection_query_backends');
-  // remove the legacy one since there would be no difference between legacy SPARQL and current SPARQL
-  unset( $backend_options[ISLANDORA_BASIC_COLLECTION_LEGACY_BACKEND] );
+  // Remove the legacy one since there would be no difference between legacy
+  // SPARQL and current SPARQL.
+  unset($backend_options[ISLANDORA_BASIC_COLLECTION_LEGACY_BACKEND]);
   $map_to_title = function ($backend) {
     return $backend['title'];
   };
