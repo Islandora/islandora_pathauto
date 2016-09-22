@@ -9,6 +9,15 @@
  * Admin form.
  */
 function islandora_pathauto_admin_settings(array $form, array &$form_state) {
+  // Get possible query language types.
+  $backend_options = module_invoke_all('islandora_basic_collection_query_backends');
+  // Remove the legacy one since there would be no difference between legacy
+  // SPARQL and current SPARQL.
+  unset($backend_options[ISLANDORA_BASIC_COLLECTION_LEGACY_BACKEND]);
+  $map_to_title = function ($backend) {
+    return $backend['title'];
+  };
+
   module_load_include('inc', 'islandora', 'includes/utilities');
   drupal_add_css(drupal_get_path('module', 'islandora_image_annotation') . '/css/islandora_annotation.css');
   $all_cmodels = islandora_get_content_models();
@@ -35,6 +44,14 @@ function islandora_pathauto_admin_settings(array $form, array &$form_state) {
     '#tree' => TRUE,
     '#theme' => 'islandora_pathauto_admin_table',
   );
+  $form['query_language'] = array(
+    '#type' => 'radios',
+    '#title' => t('Query language'),
+    '#options' => array_map($map_to_title, $backend_options),
+    '#description' => t('Query language to use for finding the content models in the system for pathauto hooks.'),
+    '#default_value' => variable_get('islandora_pathauto_query_language', 'islandora_basic_collection_sparql_query_backend'),
+  );
+
   $alink_options = array(
     'attributes' => array('target' => '_blank'),
     'html' => TRUE,
@@ -78,6 +95,7 @@ function islandora_pathauto_admin_settings(array $form, array &$form_state) {
 function islandora_pathauto_admin_settings_submit($form, &$form_state) {
   $enabled = array_filter($form_state['values']['pathauto_table']['enabled']);
   variable_set('islandora_pathauto_selected_cmodels', array_keys($enabled));
+  variable_set('islandora_pathauto_query_language', $form_state['values']['query_language']);
 }
 
 
