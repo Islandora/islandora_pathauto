@@ -161,10 +161,12 @@ function islandora_pathauto_pathauto_bulkupdate() {
       $count = 0;
       foreach ($results as $result) {
         $pid = $result['object']['value'];
-        $object = islandora_object_load($pid);
-        $result = islandora_pathauto_create_alias($object, 'bulkupdate');
-        if ($result != '') {
-          $count += $result;
+        if (islandora_namespace_accessible($pid)) {
+          $object = islandora_object_load($pid);
+          $result = islandora_pathauto_create_alias($object, 'bulkupdate');
+          if ($result != '') {
+            $count += $result;
+          }
         }
       }
       drupal_set_message($count . ' islandora aliases were updated.');
