@@ -99,6 +99,7 @@ function islandora_pathauto_create_alias($object, $op) {
   if (!$models) {
     $models = $object->models;
   }
+  dd($models, 'models');
   foreach ($models as $cmodel) {
     $result = pathauto_create_alias('islandora', $op, $path, array('fedora' => $object), $cmodel);
     if ($result != '') {
@@ -143,48 +144,93 @@ function islandora_pathauto_islandora_object_purged($pid) {
 /**
  * Implements hook_pathauto_bulkupdate().
  */
-function islandora_pathauto_pathauto_bulkupdate() {
+function islandora_pathauto_pathauto_bulkupdate(&$context) {
   module_load_include('inc', 'islandora', 'includes/utilities');
-  $query = 'SELECT $object $title $cmodel
-        FROM <#ri>
-        WHERE {
-            $object <fedora-model:label> $title ;
-            <fedora-model:hasModel> $cmodel ;
-            <fedora-model:state> <fedora-model:Active> .
-            FILTER(!sameTerm($cmodel, <info:fedora/fedora-system:FedoraObject-3.0>))
-            }
-            ORDER BY $title';
+  $sandbox = &$context['sandbox'];
+  if (empty($sandbox)) {
+    $sandbox['bob'] = 0;
+    $sandbox['total'] = 0;
+    $sandbox['total_alias'] = 0;
+    $sandbox['total_processed'] = 0;
+
+    $sandbox['models'] = variable_get('islandora_pathauto_selected_cmodels', array());
+    if (empty($sandbox['models'])) {
+      drupal_set_message(t('No Islandora content models selected'), 'warning');
+      $context['finished'] = 1;
+        return;
+    }
+    $sandbox['filters'] = array();
+    $model_filters = $sandbox['models'];
+    foreach ($model_filters as &$filter) {
+      $filter = "sameTerm(?model, <info:fedora/$filter>)";
+    }
+    $sandbox['filters']['model'] = format_string('FILTER(!models)', array('!models' => implode(' || ', $model_filters)));
+  }
+
+  $sandbox['bob']++;
+
+  $query = <<<EOQ
+SELECT ?object ?cd ?title
+FROM <#ri>
+WHERE {
+  ?object <fedora-model:label> ?title ;
+  <info:fedora/fedora-system:def/model#createdDate> ?cd ;
+  <fedora-model:hasModel> ?model ;
+  <fedora-model:state> <fedora-model:Active> .
+  !filters
+}
+ORDER BY ?cd
+!limit
+EOQ;
+
   $tuque = islandora_get_tuque_connection();
   if ($tuque) {
-    try {
-      $results = $tuque->repository->ri->query($query, 'sparql');
-      $count = 0;
-      foreach ($results as $result) {
+    $context['finished'] = 0;
+    if ($sandbox['total'] == 0) {
+      $query_string = format_string($query, array('!filters' => implode(' ', $sandbox['filters']), '!limit' => ''));
+      $sandbox['total'] = $tuque->repository->ri->countQuery($query_string, 'sparql');
+      if ($sandbox['total'] == 0) {
+        $context['finished'] = 1;
+        drupal_set_message(t('No objects found for selected modules (@models).', array('@models' => implode(', ', $sandbox['models']))));
+        return t('No objects found.');
+      }
+    }
+    if (isset($sandbox['cd'])) {
+      $sandbox['filters']['cd'] = "FILTER(?cd > '{$sandbox['cd']}'^^xsd:dateTime)";
+    }
+    else {
+      $sandbox['filters']['cd'] = '';
+    }
+
+    $limit = 1;
+    $query_string = format_string($query, array('!filters' => implode(' ', $sandbox['filters']), '!limit' => "LIMIT $limit"));
+    $results = $tuque->repository->ri->sparqlQuery($query_string);
+    if (empty($results)) {
+      $context['finished'] = 1;
+    }
+    else {
+      $sandbox['total_processed'] += count($results);
+      foreach($results as $result) {
         $pid = $result['object']['value'];
+        $sandbox['cd'] = $result['cd']['value'];
         $object = islandora_object_load($pid);
-        $result = islandora_pathauto_create_alias($object, 'bulkupdate');
-        if ($result != '') {
-          $count += $result;
+        if ($object) {
+          $alias = islandora_pathauto_create_alias($object, 'bulkupdate');
+          if ($alias != "") {
+            $sandbox['total_alias']++;
+          }
+        }
+        else {
+          //log error.. or add to context fail list?
         }
       }
-      drupal_set_message($count . ' islandora aliases were updated.');
-    }
-    catch (Exception $e) {
-      if ($e->getCode() == '404') {
-        return FALSE;
-      }
-      else {
-        return NULL;
-      }
     }
   }
-  else {
-    IslandoraTuque::getError();
+  $context['message'] = t('Processed @total_processed of @total. Added @total_alias aliases.', array('@total_processed' => $sandbox['total_processed'], '@total_alias' => $sandbox['total_alias'], '@total' => $sandbox['total']));
+  if ($context['finished'] == 1) {
+    drupal_set_message(t('Added @total_alias aliases on @total_processed PIDs.', array('@total_alias' => $sandbox['total_alias'], '@total_processed' => $sandbox['total_processed'])));
   }
-  // Assuming access denied in all other cases for now.
-  return NULL;
 }
-
 
 /**
  * Implements hook_path_alias_types().
