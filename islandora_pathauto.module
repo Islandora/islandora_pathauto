@@ -97,21 +97,24 @@ function islandora_pathauto_pathauto($op) {
  */
 function islandora_pathauto_create_alias($object, $op) {
   module_load_include('inc', 'pathauto');
-  $path = 'islandora/object/' . $object->id;
   $count = 0;
-  // Give priority to any cmodels that are enabled for pathauto.
-  $all_enabled = variable_get('islandora_pathauto_selected_cmodels', array());
-  $models = array_intersect($object->models, $all_enabled);
-  if (!$models) {
-    $models = $object->models;
-  }
+  if (islandora_namespace_accessible($object->id)) {
+    $path = 'islandora/object/' . $object->id;
+    // Give priority to any cmodels that are enabled for pathauto.
+    $all_enabled = variable_get('islandora_pathauto_selected_cmodels', array());
+    $models = array_intersect($object->models, $all_enabled);
+    if (!$models) {
+      $models = $object->models;
+    }
 
-  foreach ($models as $cmodel) {
-    $result = pathauto_create_alias('islandora', $op, $path, array('fedora' => $object), $cmodel);
-    if ($result != '') {
-      $count++;
+    foreach ($models as $cmodel) {
+      $result = pathauto_create_alias('islandora', $op, $path, array('fedora' => $object), $cmodel);
+      if ($result != '') {
+        $count++;
+      }
     }
   }
+
   return $count;
 }
 
@@ -187,6 +190,14 @@ function islandora_pathauto_pathauto_bulkupdate(&$context) {
       $filter = "sameTerm(?model, <info:fedora/$filter>)";
     }
     $sandbox['filters']['model'] = format_string('FILTER(!models)', array('!models' => implode(' || ', $model_filters)));
+
+    if (variable_get('islandora_namespace_restriction_enforced', FALSE)) {
+      $allowed_namespaces = islandora_get_allowed_namespaces();
+      foreach ($allowed_namespaces as &$ns) {
+        $ns = "regex(str(?object), \"^info:fedora/$ns\")";
+      }
+      $sandbox['filters']['ns'] = format_string('FILTER(!ns)', array('!ns' => implode(' || ', $allowed_namespaces)));
+    }
   }
 
   $query = <<<EOQ
