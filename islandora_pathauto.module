@@ -53,27 +53,33 @@ function islandora_pathauto_theme() {
  * Implements hook_pathauto().
  */
 function islandora_pathauto_pathauto($op) {
-  module_load_include('inc', 'islandora', 'includes/utilities');
-  $settings = new stdClass();
-  $settings->module = 'islandora';
-  $settings->groupheader = t('Islandora object paths');
-  $settings->patterndescr = t('All Islandora objects (except those with custom paths specified below)');
-  $settings->patterndefault = '';
-  $settings->token_type = 'fedora';
-  $settings->patternitems = array();
-  $settings->batch_update_callback = 'islandora_pathauto_pathauto_bulkupdate';
-  $all_cmodels = islandora_get_content_models();
-  $pathauto_cmodels = variable_get('islandora_pathauto_selected_cmodels', array());
-  $cmodels = array();
-  foreach ($all_cmodels as $key => $value) {
-    if (in_array($key, $pathauto_cmodels)) {
-      $cmodels[$key] = $value;
-    }
+  switch ($op) {
+    case 'settings':
+      module_load_include('inc', 'islandora', 'includes/utilities');
+      $settings = new stdClass();
+      $settings->module = 'islandora';
+      $settings->groupheader = t('Islandora object paths');
+      $settings->patterndescr = t('All Islandora objects (except those with custom paths specified below)');
+      $settings->patterndefault = '';
+      $settings->token_type = 'fedora';
+      $settings->patternitems = array();
+      $settings->batch_update_callback = 'islandora_pathauto_pathauto_bulkupdate';
+      $all_cmodels = islandora_get_content_models();
+      $pathauto_cmodels = variable_get('islandora_pathauto_selected_cmodels', array());
+      $cmodels = array();
+      foreach ($all_cmodels as $key => $value) {
+        if (in_array($key, $pathauto_cmodels)) {
+          $cmodels[$key] = $value;
+        }
+      }
+      foreach ($cmodels as $cmodel) {
+        $settings->patternitems[$cmodel['pid']] = t('Custom pattern for @cmodel objects', array("@cmodel" => $cmodel['label']));
+      }
+      return $settings;
+
+    default:
+      break;
   }
-  foreach ($cmodels as $cmodel) {
-    $settings->patternitems[$cmodel['pid']] = t('Custom pattern for @cmodel objects', array("@cmodel" => $cmodel['label']));
-  }
-  return $settings;
 }
 
 /**
@@ -99,7 +105,7 @@ function islandora_pathauto_create_alias($object, $op) {
   if (!$models) {
     $models = $object->models;
   }
-  dd($models, 'models');
+
   foreach ($models as $cmodel) {
     $result = pathauto_create_alias('islandora', $op, $path, array('fedora' => $object), $cmodel);
     if ($result != '') {
@@ -148,26 +154,40 @@ function islandora_pathauto_pathauto_bulkupdate(&$context) {
   module_load_include('inc', 'islandora', 'includes/utilities');
   $sandbox = &$context['sandbox'];
   if (empty($sandbox)) {
-    $sandbox['bob'] = 0;
     $sandbox['total'] = 0;
     $sandbox['total_alias'] = 0;
     $sandbox['total_processed'] = 0;
-
-    $sandbox['models'] = variable_get('islandora_pathauto_selected_cmodels', array());
-    if (empty($sandbox['models'])) {
-      drupal_set_message(t('No Islandora content models selected'), 'warning');
-      $context['finished'] = 1;
-        return;
-    }
     $sandbox['filters'] = array();
+    $sandbox['filters']['model'] = '';
+    $sandbox['models'] = array();
+    $settings = islandora_pathauto_pathauto('settings');
+    $pattern_all_objects = variable_get('pathauto_' . $settings->module . '_pattern', $settings->patterndefault);
+    // Determine what content models have a pattern and
+    // only query objects with those particular models.
+    if (!empty($pattern_all_objects)) {
+      $sandbox['models'][] = 'fedora-system:FedoraObject-3.0';
+    }
+    elseif (isset($settings->patternitems)) {
+      foreach ($settings->patternitems as $model => $label) {
+        $pattern = variable_get('pathauto_' . $settings->module . '_' . $model . '_pattern', '');
+        if (!empty($pattern)) {
+          $sandbox['models'][] = $model;
+        }
+      }
+    }
+
+    if (empty($sandbox['models'])) {
+      drupal_set_message(t('No patterns exist for Islandora objects.'), 'warning');
+      $context['finished'] = 1;
+      return;
+    }
+
     $model_filters = $sandbox['models'];
     foreach ($model_filters as &$filter) {
       $filter = "sameTerm(?model, <info:fedora/$filter>)";
     }
     $sandbox['filters']['model'] = format_string('FILTER(!models)', array('!models' => implode(' || ', $model_filters)));
   }
-
-  $sandbox['bob']++;
 
   $query = <<<EOQ
 SELECT ?object ?cd ?title
@@ -187,7 +207,9 @@ EOQ;
   if ($tuque) {
     $context['finished'] = 0;
     if ($sandbox['total'] == 0) {
-      $query_string = format_string($query, array('!filters' => implode(' ', $sandbox['filters']), '!limit' => ''));
+      $query_string = format_string($query, array(
+        '!filters' => implode(' ', $sandbox['filters']),
+        '!limit' => ''));
       $sandbox['total'] = $tuque->repository->ri->countQuery($query_string, 'sparql');
       if ($sandbox['total'] == 0) {
         $context['finished'] = 1;
@@ -202,15 +224,17 @@ EOQ;
       $sandbox['filters']['cd'] = '';
     }
 
-    $limit = 1;
-    $query_string = format_string($query, array('!filters' => implode(' ', $sandbox['filters']), '!limit' => "LIMIT $limit"));
+    $limit = 50;
+    $query_string = format_string($query, array(
+      '!filters' => implode(' ', $sandbox['filters']),
+      '!limit' => "LIMIT $limit"));
     $results = $tuque->repository->ri->sparqlQuery($query_string);
     if (empty($results)) {
       $context['finished'] = 1;
     }
     else {
       $sandbox['total_processed'] += count($results);
-      foreach($results as $result) {
+      foreach ($results as $result) {
         $pid = $result['object']['value'];
         $sandbox['cd'] = $result['cd']['value'];
         $object = islandora_object_load($pid);
@@ -220,13 +244,13 @@ EOQ;
             $sandbox['total_alias']++;
           }
         }
-        else {
-          //log error.. or add to context fail list?
-        }
       }
     }
   }
-  $context['message'] = t('Processed @total_processed of @total. Added @total_alias aliases.', array('@total_processed' => $sandbox['total_processed'], '@total_alias' => $sandbox['total_alias'], '@total' => $sandbox['total']));
+  $context['message'] = t('Processed @total_processed of @total. Added @total_alias aliases.', array(
+    '@total_processed' => $sandbox['total_processed'],
+    '@total_alias' => $sandbox['total_alias'],
+    '@total' => $sandbox['total']));
   if ($context['finished'] == 1) {
     drupal_set_message(t('Added @total_alias aliases on @total_processed PIDs.', array('@total_alias' => $sandbox['total_alias'], '@total_processed' => $sandbox['total_processed'])));
   }
