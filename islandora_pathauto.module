@@ -190,7 +190,6 @@ function islandora_pathauto_pathauto_bulkupdate(&$context) {
       $filter = "sameTerm(?model, <info:fedora/$filter>)";
     }
     $sandbox['filters']['model'] = format_string('FILTER(!models)', array('!models' => implode(' || ', $model_filters)));
-
     if (variable_get('islandora_namespace_restriction_enforced', FALSE)) {
       $allowed_namespaces = islandora_get_allowed_namespaces();
       foreach ($allowed_namespaces as &$ns) {
@@ -224,7 +223,7 @@ EOQ;
       $sandbox['total'] = $tuque->repository->ri->countQuery($query_string, 'sparql');
       if ($sandbox['total'] == 0) {
         $context['finished'] = 1;
-        drupal_set_message(t('No objects found for selected modules (@models).', array('@models' => implode(', ', $sandbox['models']))));
+        drupal_set_message(t('No objects found for selected models (@models).', array('@models' => implode(', ', $sandbox['models']))));
         return t('No objects found.');
       }
     }
