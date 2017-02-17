@@ -65,7 +65,7 @@ A. No. Multiple aliases for the same object are not supported. All objects shoul
 
 Current maintainers:
 
-* [Rosemary Le Faive](https://github.com/rosiel)
+* [Nelson Hart](https://github.com/nhart)
 
 ## Development
 
