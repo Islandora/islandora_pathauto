@@ -28,4 +28,3 @@ script:
   - $ISLANDORA_DIR/tests/scripts/line_endings.sh sites/all/modules/islandora_pathauto
   - drush coder-review --reviews=production,security,style,i18n,potx,sniffer islandora_pathauto
   - phpcpd --names *.module,*.inc,*.test,*.php sites/all/modules/islandora_pathauto
-  - drush test-run --uri=http://localhost:8081 "Islandora pathauto"
