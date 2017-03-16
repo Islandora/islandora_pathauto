@@ -10,7 +10,6 @@
  */
 function islandora_pathauto_admin_settings(array $form, array &$form_state) {
   module_load_include('inc', 'islandora', 'includes/utilities');
-  drupal_add_css(drupal_get_path('module', 'islandora_image_annotation') . '/css/islandora_annotation.css');
   $all_cmodels = islandora_get_content_models();
   $already_chosen = variable_get('islandora_pathauto_selected_cmodels', array());
 
