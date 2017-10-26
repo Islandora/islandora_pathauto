@@ -129,7 +129,10 @@ function islandora_pathauto_islandora_object_ingested($object) {
  * Implements hook_islandora_object_alter().
  */
 function islandora_pathauto_islandora_object_alter($original, $context) {
-
+  // Skip for new objects. hook_islandora_object_ingested will create the alias.
+  if (isset($context['action']) and $context['action'] == 'ingest') {
+    return;
+  }
   // If the label is what was modified, then
   // the $original does not have the new label yet.
   // This is a nasty fix to get it from $context.
