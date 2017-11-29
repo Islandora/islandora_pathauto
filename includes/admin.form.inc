@@ -62,7 +62,6 @@ function islandora_pathauto_admin_settings(array $form, array &$form_state) {
   $form['use_cron'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use cron to automatically add / update aliases.'),
-    '#options' => array('Yes', 'No'),
     '#default_value' => variable_get('islandora_pathauto_use_cron', FALSE),
   );
 
