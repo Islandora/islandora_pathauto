@@ -202,6 +202,7 @@ function islandora_pathauto_pathauto_bulkupdate($use_cron_last = FALSE, &$contex
   }
 
   $query = <<<EOQ
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 SELECT ?object ?cd ?md ?title
 FROM <#ri>
 WHERE {
