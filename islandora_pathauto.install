@@ -8,11 +8,11 @@
 /**
  * Implements hook_uninstall().
  *
- * Delete module variables
+ * Delete module variables.
  */
 function islandora_pathauto_uninstall() {
   $variables = array(
-    'islandora_pathauto_use_cron'
+    'islandora_pathauto_use_cron',
   );
   array_walk($variables, 'variable_del');
 }

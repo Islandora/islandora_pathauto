@@ -415,8 +415,9 @@ function islandora_pathauto_cron() {
     batch_set(array(
       'title' => t('Islandora Pathauto cron bulk updating URL aliases'),
       'operations' => array(
-      array('islandora_pathauto_pathauto_bulkupdate', array(TRUE)),
-    )));
+        array('islandora_pathauto_pathauto_bulkupdate', array(TRUE)),
+      ),
+    ));
 
     // This is a hack around the broken batch API.
     // https://drupal.org/node/638712#comment-2289138
