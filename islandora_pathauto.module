@@ -153,7 +153,7 @@ function islandora_pathauto_islandora_object_purged($pid) {
 /**
  * Implements hook_pathauto_bulkupdate().
  */
-function islandora_pathauto_pathauto_bulkupdate(&$context) {
+function islandora_pathauto_pathauto_bulkupdate($use_cron_last = FALSE, &$context = array()) {
   module_load_include('inc', 'islandora', 'includes/utilities');
   $sandbox = &$context['sandbox'];
   if (empty($sandbox)) {
@@ -195,14 +195,19 @@ function islandora_pathauto_pathauto_bulkupdate(&$context) {
       $namespace_sparql = implode('|', $namespace_array);
       $sandbox['filters']['ns'] = format_string('FILTER(regex(str(?object), "info:fedora/(!namespaces):"))', array('!namespaces' => $namespace_sparql));
     }
+    if ($use_cron_last) {
+      $modified_date_time = gmdate("Y-m-d\TH:i:s\Z", variable_get('cron_last'));
+      $sandbox['filters']['cron_last'] = "FILTER(?md > '{$modified_date_time}'^^xsd:dateTime)";
+    }
   }
 
   $query = <<<EOQ
-SELECT ?object ?cd ?title
+SELECT ?object ?cd ?md ?title
 FROM <#ri>
 WHERE {
   ?object <fedora-model:label> ?title ;
   <info:fedora/fedora-system:def/model#createdDate> ?cd ;
+  <info:fedora/fedora-system:def/view#lastModifiedDate> ?md ;
   <fedora-model:hasModel> ?model ;
   <fedora-model:state> <fedora-model:Active> .
   !filters
@@ -226,7 +231,10 @@ EOQ;
       }
     }
     if (isset($sandbox['cd'])) {
-      $sandbox['filters']['cd'] = "FILTER(?cd > '{$sandbox['cd']}'^^xsd:dateTime)";
+      $sandbox['filters']['cd'] = format_string('FILTER(?cd > "!created"^^xsd:dateTime || (?cd = "!created"^^xsd:dateTime && xsd:string(?pid) > "info:fedora/!pid"^^xsd:string))', array(
+        '!created' => $sandbox['cd'],
+        '!pid' => $sandbox['pid'],
+      ));
     }
     else {
       $sandbox['filters']['cd'] = '';
@@ -245,6 +253,7 @@ EOQ;
       foreach ($results as $result) {
         $pid = $result['object']['value'];
         $sandbox['cd'] = $result['cd']['value'];
+        $sandbox['pid'] = $pid;
         $object = islandora_object_load($pid);
         if ($object) {
           $alias = islandora_pathauto_create_alias($object, 'bulkupdate');
@@ -396,4 +405,23 @@ class IslandoraFedoraObjectReadOnly implements ArrayAccess {
    * Implements ArrayAccess.
    */
   public function offsetUnset($offset) {}
+}
+
+/**
+ * Implements hook_cron().
+ */
+function islandora_pathauto_cron() {
+  if (variable_get('islandora_pathauto_use_cron', FALSE)) {
+    batch_set(array(
+      'title' => t('Islandora Pathauto cron bulk updating URL aliases'),
+      'operations' => array(
+      array('islandora_pathauto_pathauto_bulkupdate', array(TRUE)),
+    )));
+
+    // This is a hack around the broken batch API.
+    // https://drupal.org/node/638712#comment-2289138
+    $batch =& batch_get();
+    $batch['progressive'] = FALSE;
+    batch_process();
+  }
 }
