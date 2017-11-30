@@ -151,11 +151,22 @@ function islandora_pathauto_islandora_object_purged($pid) {
 }
 
 /**
- * Implements hook_pathauto_bulkupdate().
+ * Batch operation for generating aliases for Islandora objects.
+ *
+ * @param bool $use_cron_last
+ *   Flag for using cron last time.
+ * @param array $context
+ *   Batch context.
  */
-function islandora_pathauto_pathauto_bulkupdate($use_cron_last = FALSE, &$context = array()) {
+function islandora_pathauto_bulk_batch_process($use_cron_last = FALSE, &$context = array()) {
   module_load_include('inc', 'islandora', 'includes/utilities');
   $sandbox = &$context['sandbox'];
+  $args = array(
+    '!filters' => '',
+    '!limit' => '',
+    '!md_name' => '',
+    '!md_field' => '',
+  );
   if (empty($sandbox)) {
     $sandbox['total'] = 0;
     $sandbox['total_alias'] = 0;
@@ -195,7 +206,12 @@ function islandora_pathauto_pathauto_bulkupdate($use_cron_last = FALSE, &$contex
       $namespace_sparql = implode('|', $namespace_array);
       $sandbox['filters']['ns'] = format_string('FILTER(regex(str(?object), "info:fedora/(!namespaces):"))', array('!namespaces' => $namespace_sparql));
     }
-    if ($use_cron_last) {
+  }
+
+  if ($use_cron_last) {
+    $args['!md_name'] = '?md';
+    $args['!md_field'] = '<info:fedora/fedora-system:def/view#lastModifiedDate> ?md ;';
+    if (!isset($sandbox['filters']['cron_last'])) {
       $modified_date_time = gmdate("Y-m-d\TH:i:s\Z", variable_get('cron_last'));
       $sandbox['filters']['cron_last'] = "FILTER(?md > '{$modified_date_time}'^^xsd:dateTime)";
     }
@@ -203,12 +219,11 @@ function islandora_pathauto_pathauto_bulkupdate($use_cron_last = FALSE, &$contex
 
   $query = <<<EOQ
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-SELECT ?object ?cd ?md ?title
+SELECT ?object ?cd !md_name
 FROM <#ri>
 WHERE {
-  ?object <fedora-model:label> ?title ;
-  <info:fedora/fedora-system:def/model#createdDate> ?cd ;
-  <info:fedora/fedora-system:def/view#lastModifiedDate> ?md ;
+  ?object <info:fedora/fedora-system:def/model#createdDate> ?cd ;
+  !md_field
   <fedora-model:hasModel> ?model ;
   <fedora-model:state> <fedora-model:Active> .
   !filters
@@ -221,9 +236,8 @@ EOQ;
   if ($tuque) {
     $context['finished'] = 0;
     if ($sandbox['total'] == 0) {
-      $query_string = format_string($query, array(
-        '!filters' => implode(' ', $sandbox['filters']),
-        '!limit' => ''));
+      $args['!filters'] = implode(' ', $sandbox['filters']);
+      $query_string = format_string($query, $args);
       $sandbox['total'] = $tuque->repository->ri->countQuery($query_string, 'sparql');
       if ($sandbox['total'] == 0) {
         $context['finished'] = 1;
@@ -237,14 +251,11 @@ EOQ;
         '!pid' => $sandbox['pid'],
       ));
     }
-    else {
-      $sandbox['filters']['cd'] = '';
-    }
 
-    $limit = 50;
-    $query_string = format_string($query, array(
-      '!filters' => implode(' ', $sandbox['filters']),
-      '!limit' => "LIMIT $limit"));
+    $args['!filters'] = implode(' ', $sandbox['filters']);
+    $args['!limit'] = "LIMIT 50";
+    $query_string = format_string($query, $args);
+
     $results = $tuque->repository->ri->sparqlQuery($query_string);
     if (empty($results)) {
       $context['finished'] = 1;
@@ -416,7 +427,7 @@ function islandora_pathauto_cron() {
     batch_set(array(
       'title' => t('Islandora Pathauto cron bulk updating URL aliases'),
       'operations' => array(
-        array('islandora_pathauto_pathauto_bulkupdate', array(TRUE)),
+        array('islandora_pathauto_bulk_batch_process', array(TRUE)),
       ),
     ));
 
@@ -426,4 +437,11 @@ function islandora_pathauto_cron() {
     $batch['progressive'] = FALSE;
     batch_process();
   }
+}
+
+/**
+ * Pathauto bulk update callback.
+ */
+function islandora_pathauto_pathauto_bulkupdate(&$context) {
+  return islandora_pathauto_bulk_batch_process(FALSE, $context);
 }
