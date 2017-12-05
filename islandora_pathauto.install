@@ -1,0 +1,19 @@
+<?php
+
+/**
+ * @file
+ * Implementations of installation hooks.
+ */
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Delete module variables.
+ */
+function islandora_pathauto_uninstall() {
+  $variables = array(
+    'islandora_pathauto_use_cron',
+    'islandora_pathauto_selected_cmodels',
+  );
+  array_walk($variables, 'variable_del');
+}
