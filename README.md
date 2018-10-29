@@ -18,7 +18,7 @@ Install as usual, see [this](https://drupal.org/documentation/install/modules-th
 
 Configure the path patterns using the usual Pathauto interface, at Administration » Configuration » Search and Metadata » URL Aliases » Patterns (admin/config/search/path/patterns). 
 
-![Pathauto Configuration](https://raw.githubusercontent.com/wiki/Islandora/islandora_pathauto/images/sample-pathauto-configuration.png)
+![pathautoconfiguration](https://user-images.githubusercontent.com/877577/47673120-fbac6700-db70-11e8-98fc-51f5b2cb8555.png)
 
 You can set one pattern to apply to all Islandora objects, and/or select individual content models to have custom path 
 formats. To enable custom paths for specific content models, first enable the desired content models at Administration »
