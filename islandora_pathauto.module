@@ -195,7 +195,7 @@ function islandora_pathauto_get_module_results() {
     $query_processor = new IslandoraSolrQueryProcessor();
     $query_processor->solrQuery = 'RELS_EXT_hasModel_uri_s:(*' . str_replace(":", "\:", implode(" OR *", $models)) . ')';
     $query_processor->solrStart = 0;
-    $query_processor->solrLimit = 1000;
+    $query_processor->solrLimit = variable_get('islandora_pathauto_query_limit', '10000');
     $query_processor->solrParams = array(
       'fl' => "PID,fgs_label_mt,RELS_EXT_hasModel_uri_s",
       'fq' => "",

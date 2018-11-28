@@ -44,14 +44,27 @@ function islandora_pathauto_admin_settings(array $form, array &$form_state) {
     '#tree' => TRUE,
     '#theme' => 'islandora_pathauto_admin_table',
   );
-  $form['query_language'] = array(
-    '#type' => 'radios',
-    '#title' => t('Query language'),
-    '#options' => array_map($map_to_title, $backend_options),
-    '#description' => t('Query language to use for finding the content models in the system for pathauto hooks.'),
-    '#default_value' => variable_get('islandora_pathauto_query_language', 'islandora_basic_collection_sparql_query_backend'),
-  );
-
+  // Only add this option if the module is installed.
+  if (module_exists('islandora_solr')) {
+    $form['solr_options_wrapper'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Query Islandora objects settings',
+      '#description' => 'Options related to Solr search module being installed',
+    );
+    $form['solr_options_wrapper']['query_language'] = array(
+      '#type' => 'radios',
+      '#title' => t('Query language'),
+      '#options' => array_map($map_to_title, $backend_options),
+      '#description' => t('Query language to use for finding the content models in the system for pathauto hooks.'),
+      '#default_value' => variable_get('islandora_pathauto_query_language', 'islandora_basic_collection_sparql_query_backend'),
+    );
+    $form['solr_options_wrapper']['query_limit'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Query limit'),
+      '#description' => t('The maximum number of objects to return for a Solr query.'),
+      '#default_value' => variable_get('islandora_pathauto_query_limit', '10000'),
+    );
+  }
   $alink_options = array(
     'attributes' => array('target' => '_blank'),
     'html' => TRUE,
@@ -95,7 +108,10 @@ function islandora_pathauto_admin_settings(array $form, array &$form_state) {
 function islandora_pathauto_admin_settings_submit($form, &$form_state) {
   $enabled = array_filter($form_state['values']['pathauto_table']['enabled']);
   variable_set('islandora_pathauto_selected_cmodels', array_keys($enabled));
-  variable_set('islandora_pathauto_query_language', $form_state['values']['query_language']);
+  if (module_exists('islandora_solr')) {
+    variable_set('islandora_pathauto_query_language', $form_state['values']['query_language']);
+    variable_set('islandora_pathauto_query_limit', $form_state['values']['query_limit']);
+  }
 }
 
 
