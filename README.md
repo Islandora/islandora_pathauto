@@ -28,6 +28,8 @@ formats. To enable custom paths for specific content models, first enable the de
 
 Aliases can include the object's pid (`[fedora:pid]`), the Fedora label (`[fedora:label]`), the namespace (`[fedora:namespace]`), and/or the pid without the namespace (`[fedora:shortpid]`). See the documentation for [Pathauto](https://www.drupal.org/documentation/modules/pathauto) for more information on creating aliases, and read the FAQ below.
 
+When creating aliases in batch, Islandora Pathauto will default to using a Sparql query to the Triple Store. This can be changed to using Solr, with the added advantage that it is possible to specify the base Solr query, which can be useful in case of multisites.
+
 ## Documentation
 
 Further documentation for this module is available at [our wiki](https://wiki.duraspace.org/display/ISLANDORA/Islandora+Pathauto).

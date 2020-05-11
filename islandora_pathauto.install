@@ -14,6 +14,8 @@ function islandora_pathauto_uninstall() {
   $variables = array(
     'islandora_pathauto_use_cron',
     'islandora_pathauto_selected_cmodels',
+    'islandora_pathauto_objects_query_method',
+    'islandora_pathauto_objects_query_solr',
   );
   array_walk($variables, 'variable_del');
 }
