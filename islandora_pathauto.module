@@ -162,14 +162,32 @@ function islandora_pathauto_islandora_object_purged($pid) {
  *   Batch context.
  */
 function islandora_pathauto_bulk_batch_process($use_cron_last = FALSE, &$context = array()) {
+  $fromdate = NULL;
+  if ($use_cron_last) {
+    $fromdate = gmdate("Y-m-d\TH:i:s\Z", variable_get('cron_last'));
+  }
+  islandora_pathauto_bulk_batch_process_from_date($fromdate, $context);
+
+  $sandbox = $context['sandbox'];
+  if (isset($sandbox['warning'])) {
+    drupal_set_message($sandbox['warning'], 'warning');
+  }
+  if ($context['finished'] == 1) {
+    drupal_set_message(t('Added @total_alias aliases on @total_processed PIDs.', array('@total_alias' => $sandbox['total_alias'], '@total_processed' => $sandbox['total_processed'])));
+  }
+}
+
+/**
+ * Batch operation for generating aliases for Islandora objects.
+ *
+ * @param string $fromdate
+ *   Process only objects that have a modification date greater than this date.
+ * @param array $context
+ *   Batch context.
+ */
+function islandora_pathauto_bulk_batch_process_from_date($fromdate = NULL, &$context = array()) {
   module_load_include('inc', 'islandora', 'includes/utilities');
   $sandbox = &$context['sandbox'];
-  $args = array(
-    '!filters' => '',
-    '!limit' => '',
-    '!md_name' => '',
-    '!md_field' => '',
-  );
   if (empty($sandbox)) {
     $sandbox['total'] = 0;
     $sandbox['total_alias'] = 0;
@@ -194,11 +212,44 @@ function islandora_pathauto_bulk_batch_process($use_cron_last = FALSE, &$context
     }
 
     if (empty($sandbox['models'])) {
-      drupal_set_message(t('No patterns exist for Islandora objects.'), 'warning');
+      $sandbox['warning'] = t('No patterns exist for Islandora objects.');
       $context['finished'] = 1;
       return;
     }
+  }
 
+  if (variable_get('islandora_pathauto_objects_query_method', 'sparql') === 'solr') {
+    islandora_pathauto_bulk_batch_process_from_date_solr($fromdate, $context);
+  }
+  else {
+    islandora_pathauto_bulk_batch_process_from_date_sparql($fromdate, $context);
+  }
+
+  $context['message'] = t('Processed @total_processed of @total. Added @total_alias aliases.', array(
+    '@total_processed' => $sandbox['total_processed'],
+    '@total_alias' => $sandbox['total_alias'],
+    '@total' => $sandbox['total']));
+}
+
+/**
+ * Batch operation for generating aliases for Islandora objects via Sparql.
+ *
+ * @param string $fromdate
+ *   Process only objects that have a modification date greater than this date,
+ *   formatted as YYYY-MM-DD'T'hh:mm:ss'Z', e.g. 2020-05-14T23:59:59Z.
+ * @param array $context
+ *   Batch context.
+ */
+function islandora_pathauto_bulk_batch_process_from_date_sparql($fromdate = NULL, &$context = array()) {
+  $batchsize = 50;
+  $sandbox = &$context['sandbox'];
+  $args = array(
+    '!filters' => '',
+    '!limit' => '',
+    '!md_name' => '',
+    '!md_field' => '',
+  );
+  if (empty($sandbox) || $sandbox['total_processed'] === 0) {
     $model_filters = $sandbox['models'];
     foreach ($model_filters as &$filter) {
       $filter = "sameTerm(?model, <info:fedora/$filter>)";
@@ -211,12 +262,11 @@ function islandora_pathauto_bulk_batch_process($use_cron_last = FALSE, &$context
     }
   }
 
-  if ($use_cron_last) {
+  if ($fromdate !== NULL) {
     $args['!md_name'] = '?md';
     $args['!md_field'] = '<info:fedora/fedora-system:def/view#lastModifiedDate> ?md ;';
     if (!isset($sandbox['filters']['cron_last'])) {
-      $modified_date_time = gmdate("Y-m-d\TH:i:s\Z", variable_get('cron_last'));
-      $sandbox['filters']['cron_last'] = "FILTER(?md > '{$modified_date_time}'^^xsd:dateTime)";
+      $sandbox['filters']['cron_last'] = "FILTER(?md > '{$fromdate}'^^xsd:dateTime)";
     }
   }
 
@@ -235,6 +285,10 @@ ORDER BY ?cd
 !limit
 EOQ;
 
+  if ($sandbox['total_processed'] % ($batchsize * 50) === 0) {
+    // Reset tuque connection to solve memory problem.
+    drupal_static_reset('islandora_get_tuque_connection');
+  }
   $tuque = islandora_get_tuque_connection();
   if ($tuque) {
     $context['finished'] = 0;
@@ -256,7 +310,7 @@ EOQ;
     }
 
     $args['!filters'] = implode(' ', $sandbox['filters']);
-    $args['!limit'] = "LIMIT 50";
+    $args['!limit'] = "LIMIT $batchsize";
     $query_string = format_string($query, $args);
 
     $results = $tuque->repository->ri->sparqlQuery($query_string);
@@ -268,23 +322,114 @@ EOQ;
       foreach ($results as $result) {
         $pid = $result['object']['value'];
         $sandbox['cd'] = $result['cd']['value'];
+        if (!isset($sandbox['firstcd'])) {
+          $sandbox['firstcd'] = $sandbox['cd'];
+        }
         $sandbox['pid'] = $pid;
-        $object = islandora_object_load($pid);
-        if ($object) {
-          $alias = islandora_pathauto_create_alias($object, 'bulkupdate');
-          if ($alias != "") {
+        if (isset($context['dryrun']) && $context['dryrun']) {
+          $path = "islandora/object/$pid";
+          $alias = drupal_lookup_path('alias', $path);
+          if ($alias === FALSE || $alias === $path) {
             $sandbox['total_alias']++;
+          }
+        }
+        else {
+          $object = islandora_object_load($pid);
+          if ($object) {
+            $alias = islandora_pathauto_create_alias($object, 'bulkupdate');
+            if ($alias != "") {
+              $sandbox['total_alias']++;
+            }
           }
         }
       }
     }
   }
-  $context['message'] = t('Processed @total_processed of @total. Added @total_alias aliases.', array(
-    '@total_processed' => $sandbox['total_processed'],
-    '@total_alias' => $sandbox['total_alias'],
-    '@total' => $sandbox['total']));
-  if ($context['finished'] == 1) {
-    drupal_set_message(t('Added @total_alias aliases on @total_processed PIDs.', array('@total_alias' => $sandbox['total_alias'], '@total_processed' => $sandbox['total_processed'])));
+}
+
+/**
+ * Batch operation for generating aliases for Islandora objects via Solr.
+ *
+ * @param string $fromdate
+ *   Process only objects that have a modification date greater than this date,
+ *   formatted as YYYY-MM-DD'T'hh:mm:ss'Z', e.g. 2020-05-14T23:59:59Z.
+ * @param array $context
+ *   Batch context.
+ */
+function islandora_pathauto_bulk_batch_process_from_date_solr($fromdate = NULL, &$context = array()) {
+  module_load_include('inc', 'islandora_solr', 'includes/utilities');
+
+  $sandbox = &$context['sandbox'];
+
+  $lastmodfield = "fgs_lastModifiedDate_dt";
+  $solrquery = variable_get('islandora_pathauto_objects_query_solr', '*:*');
+  $qp = new IslandoraSolrQueryProcessor();
+  $qp->buildQuery($solrquery);
+  $qp->solrLimit = 100;
+  $qp->solrStart = $sandbox['total_processed'];
+  $qp->solrParams['fq'] = array();
+  $qp->solrParams['sort'] = "$lastmodfield ASC";
+  $qp->solrParams['fl'] = "PID $lastmodfield";
+
+  $cmf = variable_get('islandora_solr_content_model_field', 'RELS_EXT_hasModel_uri_ms');
+  $model_filters = $sandbox['models'];
+  foreach ($model_filters as $model) {
+    if ($model !== 'fedora-system:FedoraObject-3.0') {
+      $qp->solrParams['fq'][] = $cmf . ':("' . $model . '" OR "info:fedora/' . $model . '")';
+    }
+  }
+  if (variable_get('islandora_namespace_restriction_enforced', FALSE)) {
+    $namespace_map = function ($namespace) {
+      return 'PID:' . islandora_solr_lesser_escape("$namespace:") . '*';
+    };
+    $qp->solrParams['fq'][] = implode(' OR ', array_map($namespace_map, islandora_get_allowed_namespaces()));
+  }
+
+  if ($fromdate !== NULL) {
+    $qp->solrParams['fq'][] = "$lastmodfield:[$fromdate TO *]";
+  }
+
+  $qp->executeQuery(FALSE);
+  $r = $qp->islandoraSolrResult;
+  $numfound = $r['response']['numFound'];
+  if ($numfound == 0) {
+    $context['finished'] = 1;
+    drupal_set_message(t('No objects found for selected models (@models).', array('@models' => implode(', ', $sandbox['models']))));
+    return t('No objects found.');
+  }
+  $sandbox['total'] = $numfound;
+  $len = count($r['response']['objects']);
+  if ($len === 0) {
+    $context['finished'] = 1;
+  }
+  else {
+    $context['finished'] = $sandbox['total_processed'] / $sandbox['total'];
+  }
+  $sandbox['total_processed'] += $len;
+  for ($i = 0; $i < $len; $i++) {
+    $solrobj = $r['response']['objects'][$i];
+    $pid = $solrobj['PID'];
+    $sandbox['cd'] = $solrobj['solr_doc'][$lastmodfield];
+    if (!isset($sandbox['firstcd'])) {
+      $sandbox['firstcd'] = $sandbox['cd'];
+    }
+    $sandbox['pid'] = $pid;
+    if (isset($context['dryrun']) && $context['dryrun']) {
+      $path = "islandora/object/$pid";
+      $alias = drupal_lookup_path('alias', $path);
+      if ($alias === FALSE || $alias === $path) {
+        $sandbox['total_alias']++;
+      }
+    }
+    else {
+      $object = islandora_object_load($pid);
+      if ($object) {
+        $alias = islandora_pathauto_create_alias($object, 'bulkupdate');
+        if ($alias != "") {
+          $sandbox['total_alias']++;
+        }
+      }
+    }
   }
 }
 
